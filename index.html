@@ -62,6 +62,9 @@
             border-radius: 12px;
             border: 1px solid #00ffff;
             min-width: 280px;
+            max-width: 350px;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
             z-index: 10;
             transition: transform 0.3s ease, opacity 0.3s ease;
             /* Ẩn mặc định */
@@ -74,6 +77,25 @@
             transform: translateX(0);
             opacity: 1;
             pointer-events: auto;
+        }
+
+        /* Custom scrollbar cho controls */
+        #controls::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        #controls::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+        }
+
+        #controls::-webkit-scrollbar-thumb {
+            background: rgba(0, 255, 255, 0.6);
+            border-radius: 4px;
+        }
+
+        #controls::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 255, 255, 0.8);
         }
 
 
@@ -132,8 +154,46 @@
             100% { transform: rotate(360deg); }
         }
 
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.1);
+                opacity: 0.8;
+            }
+        }
+
         .control-group {
             margin-bottom: 15px;
+        }
+
+        /* MP3 Controls styling */
+        #mp3-controls {
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            background: rgba(0, 255, 255, 0.05);
+        }
+
+        #mp3-controls button {
+            margin: 2px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        #mp3-controls select {
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: 1px solid rgba(0, 255, 255, 0.5);
+            border-radius: 4px;
+            padding: 5px;
         }
 
         .control-group label {
@@ -238,8 +298,27 @@
             <p>Chuẩn bị các đối tượng rơi</p>
         </div>
 
+        <!-- Auto-play notification -->
+        <div id="autoplay-notice" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(10px); z-index: 1000; align-items: center; justify-content: center;">
+            <div style="background: linear-gradient(135deg, rgba(0, 255, 255, 0.1), rgba(255, 107, 107, 0.1)); border: 2px solid rgba(0, 255, 255, 0.5); border-radius: 20px; padding: 40px; text-align: center; backdrop-filter: blur(20px); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1); max-width: 400px; margin: 20px;">
+                <div style="font-size: 60px; margin-bottom: 20px; animation: pulse 2s infinite;">🎵</div>
+                <h3 style="color: #00ffff; margin-bottom: 15px; font-size: 24px; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5); font-weight: 300;">Phát nhạc nền?</h3>
+                <p style="margin-bottom: 30px; font-size: 16px; line-height: 1.6; color: rgba(255, 255, 255, 0.9); font-weight: 300;">Bạn có muốn phát nhạc nền trong khi xem demo không?</p>
+                <div style="display: flex; gap: 20px; justify-content: center;">
+                    <button id="start-music-yes" style="background: linear-gradient(135deg, #00ff88, #00cc66); color: white; border: none; padding: 15px 30px; border-radius: 50px; cursor: pointer; font-weight: 600; font-size: 16px; transition: all 0.3s ease; box-shadow: 0 8px 20px rgba(0, 255, 136, 0.3); display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 20px;">🎶</span> Có
+                    </button>
+                    <button id="start-music-no" style="background: linear-gradient(135deg, #ff6b6b, #ff5252); color: white; border: none; padding: 15px 30px; border-radius: 50px; cursor: pointer; font-weight: 600; font-size: 16px; transition: all 0.3s ease; box-shadow: 0 8px 20px rgba(255, 107, 107, 0.3); display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 20px;">🔇</span> Không
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- Main Settings Button -->
-        <button id="main-settings" style="position: absolute; top: 20px; left: 20px; background: transparent; color: black; border: none; padding: 12px 18px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; z-index: 11; box-shadow: none;" title="Mở cài đặt">⚙️ Settings</button>
+        <button id="main-settings" style="position: absolute; top: 20px; left: 20px; background: rgba(0, 255, 255, 0.9); color: black; border: none; padding: 12px 18px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; z-index: 11; box-shadow: 0 2px 10px rgba(0, 255, 255, 0.3);" title="Mở cài đặt">⚙️ Settings</button>
+
+
 
 
 
@@ -272,6 +351,11 @@
             </div>
 
             <div class="control-group">
+                <label for="object-spacing">Khoảng cách: <span id="spacing-value" class="value-display">100</span></label>
+                <input type="range" id="object-spacing" min="20" max="200" step="10" value="100">
+            </div>
+
+            <div class="control-group">
                 <button id="add-objects">➕ Thêm đối tượng</button>
             </div>
 
@@ -281,6 +365,10 @@
 
             <div class="control-group">
                 <button id="reload-data">🔄 Tải lại dữ liệu</button>
+            </div>
+
+            <div class="control-group">
+                <button id="test-mp3-ui" style="background: #ff6b6b; color: white;">🧪 Test MP3 UI</button>
             </div>
 
             <div class="control-group">
@@ -295,14 +383,33 @@
                 <button id="toggle-music">🎵 Bật/Tắt nhạc</button>
             </div>
 
-            <div class="control-group">
-                <button id="next-track" style="display: none;">⏭️ Bài tiếp</button>
+            <div class="control-group" id="mp3-controls" style="display: none;">
+                <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
+                    <button id="prev-track">⏮️ Trước</button>
+                    <button id="next-track">⏭️ Tiếp</button>
+                </div>
+
+                <div style="margin-bottom: 10px;">
+                    <label for="play-mode">Chế độ phát:</label>
+                    <select id="play-mode" style="margin-left: 10px; padding: 5px;">
+                        <option value="sequential">🔄 Tuần tự</option>
+                        <option value="loop">🔁 Lặp lại</option>
+                        <option value="random">🔀 Ngẫu nhiên</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="track-select">Chọn bài:</label>
+                    <select id="track-select" style="margin-left: 10px; padding: 5px; width: 200px;">
+                        <option value="">-- Chọn bài hát --</option>
+                    </select>
+                </div>
             </div>
 
             <div class="control-group">
                 <label for="music-volume">Âm lượng nhạc:</label>
-                <input type="range" id="music-volume" min="0" max="1" step="0.1" value="0.1">
-                <span id="volume-value">10%</span>
+                <input type="range" id="music-volume" min="0" max="1" step="0.1" value="0.5">
+                <span id="volume-value">50%</span>
             </div>
 
             <div class="control-group" id="current-track-info" style="display: none;">
@@ -498,6 +605,7 @@
         let isInteracting = false;
         let currentMode = 'text';
         let fallSpeedMultiplier = 5;
+        let objectSpacing = 100; // Khoảng cách giữa các đối tượng
 
         // Music system
         let musicGenerator = null;
@@ -511,6 +619,10 @@
         // UI state - mặc định ẩn tất cả
         let controlsVisible = false;
         let infoVisible = false;
+
+        // Auto-play control
+        let autoPlayAttempted = false;
+        let userMadeChoice = false;
 
         // FPS tracking
         let frameCount = 0;
@@ -572,7 +684,7 @@
         /**
          * Khởi tạo cảnh 3D và bắt đầu animation
          */
-        function init() {
+        async function init() {
             console.log('🎬 Initializing 3D scene...');
 
             // Kiểm tra WebGL trước
@@ -602,8 +714,8 @@
                 setupBackground();
                 setupControls();
                 setupEventListeners();
-                loadDataFiles();
-                initMusicSystem();
+                await loadDataFiles();
+                await initMusicSystem();
                 createInitialObjects();
                 hideLoading();
                 animate();
@@ -888,16 +1000,23 @@
             document.getElementById('mode-select').addEventListener('change', onModeChange);
             document.getElementById('object-count').addEventListener('input', onObjectCountChange);
             document.getElementById('fall-speed').addEventListener('input', onFallSpeedChange);
+            document.getElementById('object-spacing').addEventListener('input', onObjectSpacingChange);
             document.getElementById('add-objects').addEventListener('click', addObjects);
             document.getElementById('clear-objects').addEventListener('click', clearAllObjects);
             document.getElementById('reload-data').addEventListener('click', reloadData);
+            document.getElementById('test-mp3-ui').addEventListener('click', testMP3UI);
             document.getElementById('toggle-music').addEventListener('click', toggleMusic);
+            document.getElementById('prev-track').addEventListener('click', prevTrack);
             document.getElementById('next-track').addEventListener('click', nextTrack);
+            document.getElementById('play-mode').addEventListener('change', onPlayModeChange);
+            document.getElementById('track-select').addEventListener('change', onTrackSelect);
             document.getElementById('music-type').addEventListener('change', onMusicTypeChange);
             document.getElementById('music-volume').addEventListener('input', onVolumeChange);
 
             // Main settings button
             document.getElementById('main-settings').addEventListener('click', showSettings);
+
+
 
             // Toggle buttons
             document.getElementById('toggle-controls').addEventListener('click', toggleControls);
@@ -1023,16 +1142,227 @@
                     if (success) {
                         console.log('✅ MP3 Player initialized successfully with', CONFIG.AUDIO_PLAYLIST.length, 'tracks');
                         updateMusicUI();
+
+                        // Tự động phát MP3 đầu tiên
+                        currentMusicType = 'mp3';
+                        document.getElementById('music-type').value = 'mp3';
+                        console.log('🎵 Starting auto-play MP3...');
+                        await autoStartMusic();
                     } else {
                         console.error('❌ MP3 Player initialization failed');
                         updateDataStatus('❌ Lỗi khởi tạo MP3 player');
+
+                        // Fallback to ambient music
+                        await autoStartAmbientMusic();
                     }
                 } else {
                     console.log('⚠️ No audio tracks found in playlist');
                     updateDataStatus('⚠️ Không có file MP3');
+
+                    // Fallback to ambient music
+                    await autoStartAmbientMusic();
                 }
             } else {
                 console.warn('⚠️ MP3 Player class not available');
+                await autoStartAmbientMusic();
+            }
+        }
+
+        /**
+         * Tự động bắt đầu phát nhạc MP3
+         */
+        async function autoStartMusic() {
+            if (!mp3Player) {
+                console.warn('⚠️ MP3 player not available for auto-start');
+                return;
+            }
+
+            if (autoPlayAttempted) {
+                console.log('🎵 Auto-play already attempted, skipping');
+                return;
+            }
+
+            autoPlayAttempted = true;
+
+            try {
+                console.log('🎵 Auto-starting MP3 music...');
+                console.log('🎵 Current track:', mp3Player.getCurrentTrack());
+
+                // Delay nhỏ để đảm bảo UI đã sẵn sàng
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                const started = await mp3Player.play();
+
+                if (started) {
+                    isMusicPlaying = true;
+                    userMadeChoice = true; // User không cần chọn vì auto-play thành công
+                    const toggleBtn = document.getElementById('toggle-music');
+                    if (toggleBtn) {
+                        toggleBtn.textContent = '🔇 Tắt nhạc';
+                    }
+                    updateCurrentTrackInfo();
+                    const track = mp3Player.getCurrentTrack();
+                    updateDataStatus(`🎵 Tự động phát: ${track?.name || 'MP3'}`);
+                    console.log('✅ Auto-started MP3:', track?.name);
+                } else {
+                    // Auto-play bị block, hiển thị notification
+                    console.warn('⚠️ Auto-play blocked, showing user notification');
+                    showAutoPlayNotification();
+                }
+            } catch (error) {
+                console.error('❌ Auto-start MP3 error:', error);
+                await autoStartAmbientMusic();
+            }
+        }
+
+        /**
+         * Tự động bắt đầu phát nhạc Ambient (fallback)
+         */
+        async function autoStartAmbientMusic() {
+            if (!musicGenerator) {
+                console.warn('⚠️ Ambient music generator not available');
+                return;
+            }
+
+            try {
+                console.log('🎹 Auto-starting Ambient music...');
+                currentMusicType = 'ambient';
+                document.getElementById('music-type').value = 'ambient';
+
+                const started = await musicGenerator.start();
+                if (started) {
+                    isMusicPlaying = true;
+                    document.getElementById('toggle-music').textContent = '🔇 Tắt nhạc';
+                    updateDataStatus('🎹 Tự động phát nhạc Ambient');
+                    console.log('✅ Auto-started Ambient music');
+                } else {
+                    console.warn('⚠️ Failed to auto-start Ambient music');
+                    updateDataStatus('⚠️ Không thể tự động phát nhạc');
+                }
+            } catch (error) {
+                console.error('❌ Auto-start Ambient error:', error);
+                updateDataStatus('❌ Lỗi tự động phát nhạc');
+            }
+        }
+
+        /**
+         * Hiển thị notification auto-play với tùy chọn Có/Không
+         */
+        function showAutoPlayNotification() {
+            const notice = document.getElementById('autoplay-notice');
+            const yesBtn = document.getElementById('start-music-yes');
+            const noBtn = document.getElementById('start-music-no');
+
+            notice.style.display = 'flex';
+            console.log('🎵 Showing auto-play choice dialog');
+
+            // Ngăn click outside popup trigger music
+            notice.addEventListener('click', (e) => {
+                if (e.target === notice) {
+                    console.log('🚫 Click outside popup - no action');
+                    e.stopPropagation();
+                    e.preventDefault();
+                }
+            });
+
+            // Event listener cho nút "Có"
+            yesBtn.addEventListener('click', async () => {
+                console.log('✅ User chose to play music');
+                userMadeChoice = true;
+                notice.style.display = 'none';
+
+                // Phát nhạc
+                await startMusicAfterUserChoice();
+            }, { once: true });
+
+            // Event listener cho nút "Không"
+            noBtn.addEventListener('click', () => {
+                console.log('❌ User chose not to play music');
+                userMadeChoice = true;
+                notice.style.display = 'none';
+
+                // Đảm bảo không phát nhạc
+                isMusicPlaying = false;
+                if (mp3Player && mp3Player.audio) {
+                    mp3Player.pause();
+                }
+                if (musicGenerator && musicGenerator.isPlaying) {
+                    musicGenerator.stop();
+                }
+
+                // Cập nhật UI
+                document.getElementById('toggle-music').textContent = '🎵 Bật/Tắt nhạc';
+                updateDataStatus('🔇 Người dùng chọn không phát nhạc');
+            }, { once: true });
+
+            // Thêm hover effects cho buttons
+            yesBtn.addEventListener('mouseenter', () => {
+                yesBtn.style.transform = 'scale(1.08) translateY(-2px)';
+                yesBtn.style.boxShadow = '0 12px 25px rgba(0, 255, 136, 0.4)';
+            });
+
+            yesBtn.addEventListener('mouseleave', () => {
+                yesBtn.style.transform = 'scale(1) translateY(0)';
+                yesBtn.style.boxShadow = '0 8px 20px rgba(0, 255, 136, 0.3)';
+            });
+
+            noBtn.addEventListener('mouseenter', () => {
+                noBtn.style.transform = 'scale(1.08) translateY(-2px)';
+                noBtn.style.boxShadow = '0 12px 25px rgba(255, 107, 107, 0.4)';
+            });
+
+            noBtn.addEventListener('mouseleave', () => {
+                noBtn.style.transform = 'scale(1) translateY(0)';
+                noBtn.style.boxShadow = '0 8px 20px rgba(255, 107, 107, 0.3)';
+            });
+        }
+
+        /**
+         * Bắt đầu phát nhạc sau khi user chọn "Có"
+         */
+        async function startMusicAfterUserChoice() {
+            try {
+                if (currentMusicType === 'mp3' && mp3Player) {
+                    const started = await mp3Player.play();
+                    if (started) {
+                        isMusicPlaying = true;
+                        document.getElementById('toggle-music').textContent = '🔇 Tắt nhạc';
+                        updateCurrentTrackInfo();
+                        const track = mp3Player.getCurrentTrack();
+                        updateDataStatus(`🎵 Đang phát: ${track?.name || 'MP3'}`);
+                        console.log('🎵 MP3 music started after user choice');
+                    } else {
+                        // Fallback to ambient
+                        await startAmbientAfterChoice();
+                    }
+                } else if (currentMusicType === 'ambient' && musicGenerator) {
+                    await startAmbientAfterChoice();
+                } else {
+                    console.warn('⚠️ No music system available');
+                    updateDataStatus('❌ Không có hệ thống nhạc');
+                }
+            } catch (error) {
+                console.error('❌ Error starting music after user choice:', error);
+                updateDataStatus('❌ Lỗi phát nhạc');
+            }
+        }
+
+        /**
+         * Bắt đầu phát ambient music
+         */
+        async function startAmbientAfterChoice() {
+            if (musicGenerator) {
+                const started = await musicGenerator.start();
+                if (started) {
+                    isMusicPlaying = true;
+                    currentMusicType = 'ambient';
+                    document.getElementById('music-type').value = 'ambient';
+                    document.getElementById('toggle-music').textContent = '🔇 Tắt nhạc';
+                    updateDataStatus('🎹 Đang phát nhạc Ambient');
+                    console.log('🎹 Ambient music started after user choice');
+                } else {
+                    updateDataStatus('❌ Không thể phát nhạc');
+                }
             }
         }
 
@@ -1172,50 +1502,194 @@
         }
 
         /**
-         * Tạo đối tượng 3D (văn bản hoặc hình ảnh)
+         * Load SVG texture bằng cách convert sang canvas
          */
-        function createObject(content, type, hue, imagePath = null) {
-            let texture;
+        function loadSVGTexture(svgPath, mesh, hue, content) {
+            console.log(`🎨 Loading SVG: ${svgPath}`);
 
-            if (type === 'text') {
-                texture = new THREE.CanvasTexture(createTextTexture(content, hue));
-            } else if (type === 'image' && imagePath) {
-                // Load image từ file
-                texture = new THREE.TextureLoader().load(
-                    imagePath,
-                    function(loadedTexture) {
-                        console.log(`✅ Loaded image: ${imagePath}`);
-                    },
-                    undefined,
-                    function(error) {
-                        console.warn(`⚠️ Failed to load image: ${imagePath}`, error);
+            fetch(svgPath)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                     }
-                );
-            } else {
-                // Fallback to generated shapes
-                texture = new THREE.CanvasTexture(createImageTexture(content, hue));
-            }
+                    return response.text();
+                })
+                .then(svgText => {
+                    console.log(`📄 SVG content loaded: ${svgPath}`);
 
-            texture.needsUpdate = true;
+                    // Tạo canvas từ SVG
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = 512;
+                    canvas.height = 512;
 
-            // Tạo material với hiệu ứng emissive
-            const material = new THREE.MeshBasicMaterial({
-                map: texture,
+                    // Tạo image từ SVG
+                    const img = new Image();
+                    const svgBlob = new Blob([svgText], { type: 'image/svg+xml' });
+                    const url = URL.createObjectURL(svgBlob);
+
+                    img.onload = function() {
+                        console.log(`✅ SVG image loaded: ${svgPath}`);
+
+                        // Vẽ SVG lên canvas
+                        ctx.clearRect(0, 0, 512, 512);
+
+                        // Tính toán để center và scale SVG
+                        const scale = Math.min(512 / img.width, 512 / img.height) * 0.8;
+                        const x = (512 - img.width * scale) / 2;
+                        const y = (512 - img.height * scale) / 2;
+
+                        ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+
+                        // Tạo texture từ canvas
+                        const texture = new THREE.CanvasTexture(canvas);
+                        texture.needsUpdate = true;
+
+                        // Cập nhật material
+                        const material = new THREE.MeshBasicMaterial({
+                            map: texture,
+                            transparent: true,
+                            alphaTest: 0.1,
+                            emissive: new THREE.Color().setHSL(hue / 360, 0.6, 0.2),
+                            emissiveIntensity: 0.4
+                        });
+
+                        mesh.material.dispose();
+                        mesh.material = material;
+                        mesh.userData.imageLoaded = true;
+
+                        // Cleanup
+                        URL.revokeObjectURL(url);
+                    };
+
+                    img.onerror = function() {
+                        console.warn(`⚠️ Failed to load SVG image: ${svgPath}`);
+                        URL.revokeObjectURL(url);
+                        applyFallbackTexture(mesh, content, hue);
+                    };
+
+                    img.src = url;
+                })
+                .catch(error => {
+                    console.warn(`⚠️ Failed to fetch SVG: ${svgPath}`, error);
+                    applyFallbackTexture(mesh, content, hue);
+                });
+        }
+
+        /**
+         * Apply fallback texture khi load image thất bại
+         */
+        function applyFallbackTexture(mesh, content, hue) {
+            console.log(`🔄 Applying fallback texture for: ${content}`);
+
+            const fallbackTexture = new THREE.CanvasTexture(createImageTexture(content, hue));
+            fallbackTexture.needsUpdate = true;
+
+            const fallbackMaterial = new THREE.MeshBasicMaterial({
+                map: fallbackTexture,
                 transparent: true,
                 alphaTest: 0.1,
                 emissive: new THREE.Color().setHSL(hue / 360, 0.6, 0.2),
                 emissiveIntensity: 0.4
             });
 
-            // Tạo geometry
+            mesh.material.dispose();
+            mesh.material = fallbackMaterial;
+            mesh.userData.imageLoaded = true;
+        }
+
+        /**
+         * Tạo đối tượng 3D (văn bản hoặc hình ảnh)
+         */
+        function createObject(content, type, hue, imagePath = null) {
+            // Tạo geometry trước
             const size = CONFIG.OBJECT_SIZE.min + Math.random() * (CONFIG.OBJECT_SIZE.max - CONFIG.OBJECT_SIZE.min);
             const geometry = new THREE.PlaneGeometry(size, size);
 
-            // Tạo mesh
-            const mesh = new THREE.Mesh(geometry, material);
+            // Tạo material tạm thời với màu sắc và loading indicator
+            const tempMaterial = new THREE.MeshBasicMaterial({
+                color: new THREE.Color().setHSL(hue / 360, 0.8, 0.6),
+                transparent: true,
+                opacity: 0.6,
+                wireframe: type === 'image' && imagePath // Wireframe cho images đang load
+            });
+
+            // Tạo mesh với material tạm thời
+            const mesh = new THREE.Mesh(geometry, tempMaterial);
+
+            if (type === 'text') {
+                // Text texture có thể tạo ngay
+                const texture = new THREE.CanvasTexture(createTextTexture(content, hue));
+                texture.needsUpdate = true;
+
+                const material = new THREE.MeshBasicMaterial({
+                    map: texture,
+                    transparent: true,
+                    alphaTest: 0.1,
+                    emissive: new THREE.Color().setHSL(hue / 360, 0.6, 0.2),
+                    emissiveIntensity: 0.4
+                });
+
+                mesh.material = material;
+
+            } else if (type === 'image' && imagePath) {
+                // Load image từ file - async
+                console.log(`🔄 Loading image: ${imagePath} for content: ${content}`);
+
+                // Thử load bằng cách khác nếu là SVG
+                if (imagePath.toLowerCase().endsWith('.svg')) {
+                    loadSVGTexture(imagePath, mesh, hue, content);
+                } else {
+                    // Load image thông thường
+                    const loader = new THREE.TextureLoader();
+                    loader.load(
+                        imagePath,
+                        function(loadedTexture) {
+                            console.log(`✅ Loaded image: ${imagePath}`);
+
+                            // Cập nhật material khi texture load xong
+                            const material = new THREE.MeshBasicMaterial({
+                                map: loadedTexture,
+                                transparent: true,
+                                alphaTest: 0.1,
+                                emissive: new THREE.Color().setHSL(hue / 360, 0.6, 0.2),
+                                emissiveIntensity: 0.4
+                            });
+
+                            mesh.material.dispose(); // Cleanup old material
+                            mesh.material = material;
+                            mesh.userData.imageLoaded = true;
+                        },
+                        function(progress) {
+                            if (progress.total > 0) {
+                                console.log(`📊 Loading progress: ${imagePath} - ${(progress.loaded / progress.total * 100).toFixed(1)}%`);
+                            }
+                        },
+                        function(error) {
+                            console.warn(`⚠️ Failed to load image: ${imagePath}`, error);
+                            applyFallbackTexture(mesh, content, hue);
+                        }
+                    );
+                }
+
+            } else {
+                // Fallback to generated shapes
+                const texture = new THREE.CanvasTexture(createImageTexture(content, hue));
+                texture.needsUpdate = true;
+
+                const material = new THREE.MeshBasicMaterial({
+                    map: texture,
+                    transparent: true,
+                    alphaTest: 0.1,
+                    emissive: new THREE.Color().setHSL(hue / 360, 0.6, 0.2),
+                    emissiveIntensity: 0.4
+                });
+
+                mesh.material = material;
+            }
 
             // Vị trí ngẫu nhiên trên hình cầu (spherical distribution)
-            const radius = CONFIG.SPREAD_AREA * 0.8;
+            const radius = objectSpacing * 0.8;
             const theta = Math.random() * Math.PI * 2; // Góc ngang (0-360°)
             const phi = Math.acos(2 * Math.random() - 1); // Góc dọc (phân bố đều trên cầu)
 
@@ -1228,11 +1702,13 @@
                 content: content,
                 type: type,
                 hue: hue,
+                imagePath: imagePath,
                 originalScale: 1,
                 fallSpeed: CONFIG.FALL_SPEED.min + Math.random() * (CONFIG.FALL_SPEED.max - CONFIG.FALL_SPEED.min),
                 isPaused: false,
                 isSelected: false,
-                rotationSpeed: (Math.random() - 0.5) * 0.02
+                rotationSpeed: (Math.random() - 0.5) * 0.02,
+                imageLoaded: type !== 'image' || !imagePath // true for text, false for images until loaded
             };
 
             return mesh;
@@ -1492,12 +1968,14 @@
                         musicGenerator.stop();
                         isMusicPlaying = false;
                         document.getElementById('toggle-music').textContent = '🎵 Bật nhạc';
+                        updateDataStatus('🔇 Đã tắt nhạc Ambient');
                         console.log('🔇 Ambient music stopped');
                     } else {
                         const started = await musicGenerator.start();
                         if (started) {
                             isMusicPlaying = true;
                             document.getElementById('toggle-music').textContent = '🔇 Tắt nhạc';
+                            updateDataStatus('🎹 Đang phát nhạc Ambient');
                             console.log('🎵 Ambient music started');
                         }
                     }
@@ -1530,6 +2008,7 @@
                         mp3Player.pause();
                         isMusicPlaying = false;
                         document.getElementById('toggle-music').textContent = '🎵 Bật nhạc';
+                        updateDataStatus('🔇 Đã tắt nhạc MP3');
                         console.log('🔇 MP3 paused');
                     } else {
                         console.log('🎵 Attempting to play MP3...');
@@ -1538,7 +2017,7 @@
                             isMusicPlaying = true;
                             document.getElementById('toggle-music').textContent = '🔇 Tắt nhạc';
                             updateCurrentTrackInfo();
-                            updateDataStatus('🎵 Đang phát MP3');
+                            updateDataStatus('🎵 Đang phát nhạc MP3');
                             console.log('🎵 MP3 playing successfully');
                         } else {
                             console.error('❌ Failed to start MP3 playback');
@@ -1558,6 +2037,85 @@
             if (currentMusicType === 'mp3' && mp3Player) {
                 await mp3Player.nextTrack();
                 updateCurrentTrackInfo();
+                updateTrackSelectUI();
+                if (isMusicPlaying) {
+                    const track = mp3Player.getCurrentTrack();
+                    updateDataStatus(`🎵 Đang phát: ${track?.name || 'MP3'}`);
+                }
+            }
+        }
+
+        /**
+         * Chuyển bài trước đó (chỉ cho MP3)
+         */
+        async function prevTrack() {
+            if (currentMusicType === 'mp3' && mp3Player) {
+                await mp3Player.previousTrack();
+                updateCurrentTrackInfo();
+                updateTrackSelectUI();
+                if (isMusicPlaying) {
+                    const track = mp3Player.getCurrentTrack();
+                    updateDataStatus(`🎵 Đang phát: ${track?.name || 'MP3'}`);
+                }
+            }
+        }
+
+        /**
+         * Thay đổi chế độ phát
+         */
+        function onPlayModeChange(event) {
+            const mode = event.target.value;
+            if (currentMusicType === 'mp3' && mp3Player) {
+                mp3Player.setPlayMode(mode);
+                updateDataStatus(`🔄 Chế độ phát: ${getPlayModeText(mode)}`);
+            }
+        }
+
+        /**
+         * Chọn track từ dropdown
+         */
+        async function onTrackSelect(event) {
+            const trackIndex = parseInt(event.target.value);
+            if (isNaN(trackIndex) || currentMusicType !== 'mp3' || !mp3Player) return;
+
+            await mp3Player.selectTrack(trackIndex);
+            updateCurrentTrackInfo();
+
+            if (isMusicPlaying) {
+                const track = mp3Player.getCurrentTrack();
+                updateDataStatus(`🎵 Đang phát: ${track?.name || 'MP3'}`);
+            }
+        }
+
+        /**
+         * Lấy text hiển thị cho play mode
+         */
+        function getPlayModeText(mode) {
+            switch (mode) {
+                case 'sequential': return '🔄 Tuần tự';
+                case 'loop': return '🔁 Lặp lại';
+                case 'random': return '🔀 Ngẫu nhiên';
+                default: return mode;
+            }
+        }
+
+        /**
+         * Cập nhật UI track select dropdown
+         */
+        function updateTrackSelectUI() {
+            if (currentMusicType !== 'mp3' || !mp3Player) return;
+
+            const trackSelect = document.getElementById('track-select');
+            const currentTrack = mp3Player.getCurrentTrack();
+            const playlist = mp3Player.getPlaylist();
+
+            // Tìm index của track hiện tại
+            const currentIndex = playlist.findIndex(track =>
+                track.name === currentTrack?.name && track.path === currentTrack?.path
+            );
+
+            if (currentIndex !== -1) {
+                trackSelect.value = currentIndex.toString();
             }
         }
 
@@ -1575,30 +2133,95 @@
                     mp3Player.pause();
                 }
                 isMusicPlaying = false;
+                updateDataStatus('🔇 Đã chuyển loại nhạc');
             }
 
             currentMusicType = newType;
+
+            // Cập nhật UI ngay lập tức
             updateMusicUI();
 
             document.getElementById('toggle-music').textContent = '🎵 Bật nhạc';
             console.log('🔄 Switched to', newType, 'music');
+
+            // Reset test button nếu có
+            const testBtn = document.getElementById('test-mp3-ui');
+            if (testBtn) {
+                testBtn.textContent = '🧪 Test MP3 UI';
+                testBtn.style.background = '#ff6b6b';
+            }
         }
 
         /**
          * Cập nhật UI theo loại nhạc
          */
         function updateMusicUI() {
-            const nextTrackBtn = document.getElementById('next-track');
+            const mp3Controls = document.getElementById('mp3-controls');
             const trackInfo = document.getElementById('current-track-info');
 
-            if (currentMusicType === 'mp3') {
-                nextTrackBtn.style.display = 'block';
+            console.log('🎮 updateMusicUI called:', {
+                currentMusicType,
+                mp3Player: !!mp3Player,
+                playlist: mp3Player ? mp3Player.getPlaylist().length : 0
+            });
+
+            if (currentMusicType === 'mp3' && mp3Player && mp3Player.getPlaylist().length > 0) {
+                console.log('✅ Showing MP3 controls');
+                mp3Controls.style.display = 'block';
                 trackInfo.style.display = 'block';
+
+                // Populate track list
+                populateTrackList();
+
+                // Update current track selection
+                updateTrackSelectUI();
                 updateCurrentTrackInfo();
             } else {
-                nextTrackBtn.style.display = 'none';
+                console.log('❌ Hiding MP3 controls:', {
+                    reason: currentMusicType !== 'mp3' ? 'not mp3 mode' :
+                           !mp3Player ? 'no mp3 player' :
+                           'no tracks in playlist'
+                });
+                mp3Controls.style.display = 'none';
                 trackInfo.style.display = 'none';
             }
+        }
+
+        /**
+         * Populate danh sách bài hát vào dropdown
+         */
+        function populateTrackList() {
+            console.log('📋 populateTrackList called');
+
+            if (currentMusicType !== 'mp3' || !mp3Player) {
+                console.log('❌ Cannot populate: not MP3 mode or no player');
+                return;
+            }
+
+            const trackSelect = document.getElementById('track-select');
+            const playlist = mp3Player.getPlaylist();
+
+            console.log('📋 Track select element:', !!trackSelect);
+            console.log('📋 Playlist:', playlist);
+
+            if (!trackSelect) {
+                console.error('❌ track-select element not found!');
+                return;
+            }
+
+            // Clear existing options (except first one)
+            trackSelect.innerHTML = '<option value="">-- Chọn bài hát --</option>';
+
+            // Add tracks to dropdown
+            playlist.forEach((track, index) => {
+                const option = document.createElement('option');
+                option.value = index.toString();
+                option.textContent = track.name;
+                trackSelect.appendChild(option);
+                console.log(`📋 Added track ${index}: ${track.name}`);
+            });
+
+            console.log(`✅ Populated track list with ${playlist.length} tracks`);
         }
 
         /**
@@ -1641,6 +2264,60 @@
             // Clear existing objects and recreate
             clearAllObjects();
             createInitialObjects();
+        }
+
+        /**
+         * Test MP3 UI - Toggle hiển thị controls
+         */
+        function testMP3UI() {
+            console.log('🧪 Testing MP3 UI...');
+
+            const mp3Controls = document.getElementById('mp3-controls');
+            const trackInfo = document.getElementById('current-track-info');
+            const testBtn = document.getElementById('test-mp3-ui');
+
+            console.log('🧪 MP3 Controls element:', mp3Controls);
+            console.log('🧪 Track Info element:', trackInfo);
+
+            // Check current state
+            const isCurrentlyVisible = mp3Controls && mp3Controls.style.display === 'block';
+
+            if (mp3Controls && trackInfo) {
+                if (isCurrentlyVisible) {
+                    // Hide MP3 controls
+                    mp3Controls.style.display = 'none';
+                    trackInfo.style.display = 'none';
+                    testBtn.textContent = '🧪 Show MP3 UI';
+                    testBtn.style.background = '#ff6b6b';
+                    console.log('❌ Hidden MP3 controls');
+                } else {
+                    // Show MP3 controls
+                    mp3Controls.style.display = 'block';
+                    trackInfo.style.display = 'block';
+                    testBtn.textContent = '🧪 Hide MP3 UI';
+                    testBtn.style.background = '#00ff88';
+
+                    // Force set MP3 mode
+                    currentMusicType = 'mp3';
+                    document.getElementById('music-type').value = 'mp3';
+
+                    // Try to populate track list
+                    if (mp3Player) {
+                        populateTrackList();
+                    } else {
+                        console.log('❌ No MP3 player available');
+                    }
+
+                    console.log('✅ Shown MP3 controls');
+                }
+            }
+
+            console.log('🧪 Current state:', {
+                currentMusicType,
+                mp3Player: !!mp3Player,
+                playlist: mp3Player ? mp3Player.getPlaylist() : null,
+                visible: !isCurrentlyVisible
+            });
         }
 
         /**
@@ -1789,50 +2466,98 @@
         }
 
         /**
+         * Xử lý thay đổi khoảng cách đối tượng
+         */
+        function onObjectSpacingChange(event) {
+            objectSpacing = parseInt(event.target.value);
+            document.getElementById('spacing-value').textContent = objectSpacing;
+
+            // Cập nhật SPREAD_AREA trong CONFIG
+            CONFIG.SPREAD_AREA = objectSpacing;
+
+            // Áp dụng spacing mới cho tất cả objects hiện tại
+            redistributeObjects();
+
+            console.log(`📏 Object spacing changed to: ${objectSpacing}`);
+        }
+
+        /**
+         * Phân bố lại tất cả objects với spacing mới
+         */
+        function redistributeObjects() {
+            const radius = objectSpacing * 0.8;
+
+            objects.forEach((obj) => {
+                // Giữ nguyên Y position, chỉ thay đổi X và Z
+                const currentY = obj.position.y;
+
+                // Tạo vị trí mới trên hình cầu
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.acos(2 * Math.random() - 1);
+
+                obj.position.x = radius * Math.sin(phi) * Math.cos(theta);
+                obj.position.y = currentY; // Giữ nguyên Y
+                obj.position.z = radius * Math.sin(phi) * Math.sin(theta);
+            });
+
+            console.log(`🔄 Redistributed ${objects.length} objects with spacing: ${objectSpacing}`);
+        }
+
+        /**
          * Thêm đối tượng mới với phân bố ngẫu nhiên
          */
         function addObjects() {
             const addCount = Math.min(20, parseInt(document.getElementById('object-count').value));
 
             for (let i = 0; i < addCount; i++) {
-                let content, type;
-                const hue = Math.random() * 360;
+                let content, type, hue, imagePath = null;
 
                 if (currentMode === 'text') {
                     if (CONFIG.WORDS.length > 0) {
                         const wordData = CONFIG.WORDS[Math.floor(Math.random() * CONFIG.WORDS.length)];
                         content = wordData.text || wordData; // Fallback nếu wordData là string
+                        hue = wordData.hue || Math.random() * 360;
                         type = 'text';
                     } else {
                         content = 'Hello';
+                        hue = Math.random() * 360;
                         type = 'text';
                     }
                 } else if (currentMode === 'images') {
                     if (CONFIG.IMAGES.length > 0) {
                         const imageData = CONFIG.IMAGES[Math.floor(Math.random() * CONFIG.IMAGES.length)];
                         content = imageData.name || imageData;
+                        hue = imageData.hue || Math.random() * 360;
+                        imagePath = imageData.path;
                         type = 'image';
+                        console.log(`➕ Adding image: ${content} from ${imagePath}`);
                     } else {
                         const shapes = ['circle', 'square', 'triangle', 'star'];
                         content = shapes[Math.floor(Math.random() * shapes.length)];
+                        hue = Math.random() * 360;
                         type = 'image';
                     }
                 } else {
                     if (Math.random() > 0.5 && CONFIG.WORDS.length > 0) {
                         const wordData = CONFIG.WORDS[Math.floor(Math.random() * CONFIG.WORDS.length)];
                         content = wordData.text || wordData;
+                        hue = wordData.hue || Math.random() * 360;
                         type = 'text';
                     } else if (CONFIG.IMAGES.length > 0) {
                         const imageData = CONFIG.IMAGES[Math.floor(Math.random() * CONFIG.IMAGES.length)];
                         content = imageData.name || imageData;
+                        hue = imageData.hue || Math.random() * 360;
+                        imagePath = imageData.path;
                         type = 'image';
+                        console.log(`➕ Adding mixed image: ${content} from ${imagePath}`);
                     } else {
                         content = 'Hello';
+                        hue = Math.random() * 360;
                         type = 'text';
                     }
                 }
 
-                const obj = createObject(content, type, hue);
+                const obj = createObject(content, type, hue, imagePath);
 
                 // Đối tượng mới xuất hiện ở trên cùng
                 obj.position.y = CONFIG.RESPAWN_Y + Math.random() * 20;
@@ -1880,6 +2605,32 @@
          */
         function hideLoading() {
             document.getElementById('loading').classList.add('hidden');
+            console.log('🎉 Loading completed, scene ready!');
+
+            // Trigger auto-play sau khi loading hoàn tất
+            setTimeout(() => {
+                triggerAutoPlay();
+            }, 1000);
+        }
+
+        /**
+         * Trigger auto-play (có thể gọi nhiều lần)
+         */
+        async function triggerAutoPlay() {
+            if (isMusicPlaying || userMadeChoice) {
+                console.log('🎵 Music already playing or user made choice, skipping auto-play');
+                return;
+            }
+
+            console.log('🎵 Triggering auto-play...');
+
+            if (currentMusicType === 'mp3' && mp3Player && mp3Player.audio) {
+                await autoStartMusic();
+            } else if (currentMusicType === 'ambient' && musicGenerator) {
+                await autoStartAmbientMusic();
+            } else {
+                console.warn('⚠️ No music system available for auto-play');
+            }
         }
 
         /**
@@ -1956,8 +2707,8 @@
 
                     // Respawn khi rơi quá thấp - tạo lại vị trí spherical
                     if (obj.position.y < CONFIG.DESPAWN_Y) {
-                        // Tạo vị trí mới trên hình cầu
-                        const radius = CONFIG.SPREAD_AREA * 0.8;
+                        // Tạo vị trí mới trên hình cầu với khoảng cách hiện tại
+                        const radius = objectSpacing * 0.8;
                         const theta = Math.random() * Math.PI * 2;
                         const phi = Math.acos(2 * Math.random() - 1);
 

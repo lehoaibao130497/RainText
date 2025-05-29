@@ -17,7 +17,7 @@ class AmbientMusicGenerator {
             this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
             this.masterGain = this.audioContext.createGain();
             this.masterGain.connect(this.audioContext.destination);
-            this.masterGain.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+            this.masterGain.gain.setValueAtTime(0.5, this.audioContext.currentTime);
             return true;
         } catch (error) {
             console.warn('Web Audio API không được hỗ trợ:', error);
@@ -25,7 +25,7 @@ class AmbientMusicGenerator {
         }
     }
 
-    createTone(frequency, type = 'sine', volume = 0.1) {
+    createTone(frequency, type = 'sine', volume = 0.5) {
         const oscillator = this.audioContext.createOscillator();
         const gainNode = this.audioContext.createGain();
         const filter = this.audioContext.createBiquadFilter();
@@ -56,19 +56,20 @@ class AmbientMusicGenerator {
             if (!initialized) return false;
         }
 
-        if (this.audioContext.state === 'suspended') {
-            await this.audioContext.resume();
-        }
+        try {
+            if (this.audioContext.state === 'suspended') {
+                await this.audioContext.resume();
+            }
 
-        this.isPlaying = true;
+            this.isPlaying = true;
 
         // Tạo các tông âm ambient
         const notes = [
-            { freq: 110, type: 'sine', vol: 0.08 },    // A2
-            { freq: 146.83, type: 'sine', vol: 0.06 }, // D3
-            { freq: 220, type: 'triangle', vol: 0.05 }, // A3
-            { freq: 293.66, type: 'sine', vol: 0.04 }, // D4
-            { freq: 440, type: 'sine', vol: 0.03 },    // A4
+            { freq: 110, type: 'sine', vol: 0.4 },    // A2
+            { freq: 146.83, type: 'sine', vol: 0.3 }, // D3
+            { freq: 220, type: 'triangle', vol: 0.25 }, // A3
+            { freq: 293.66, type: 'sine', vol: 0.2 }, // D4
+            { freq: 440, type: 'sine', vol: 0.15 },    // A4
         ];
 
         notes.forEach((note, index) => {
@@ -83,7 +84,13 @@ class AmbientMusicGenerator {
             }, index * 1000);
         });
 
-        return true;
+            return true;
+
+        } catch (error) {
+            console.error('❌ Ambient music start error:', error);
+            this.isPlaying = false;
+            return false;
+        }
     }
 
     addModulation(oscillator, filter) {

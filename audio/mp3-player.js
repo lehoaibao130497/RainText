@@ -7,11 +7,13 @@ class MP3AudioPlayer {
     constructor() {
         this.audio = null;
         this.isPlaying = false;
-        this.volume = 0.1;
+        this.volume = 0.5;
         this.currentTrack = null;
         this.playlist = [];
         this.currentIndex = 0;
         this.loop = true;
+        this.playMode = 'sequential'; // 'sequential', 'loop', 'random'
+        this.playHistory = []; // Lưu lịch sử phát để tránh lặp trong random mode
         this.crossfadeDuration = 2000; // 2 seconds
     }
 
@@ -158,14 +160,37 @@ class MP3AudioPlayer {
         }
 
         try {
-            await this.audio.play();
+            // Đảm bảo audio context được resume (cần cho auto-play)
+            if (this.audio.paused) {
+                await this.audio.play();
+            }
+
             this.isPlaying = true;
             console.log('🎵 Playing:', this.currentTrack.name);
             return true;
         } catch (error) {
-            console.error('❌ Play error:', error);
-            return false;
+            // Auto-play có thể bị block bởi browser policy
+            if (error.name === 'NotAllowedError') {
+                console.warn('⚠️ Auto-play blocked by browser. User interaction required.');
+                console.log('💡 Will show popup for user choice');
+
+                // KHÔNG tự động setup user interaction listeners
+                // Để main app xử lý thông qua popup
+                return false;
+            } else {
+                console.error('❌ Play error:', error);
+                return false;
+            }
         }
+    }
+
+    /**
+     * Setup auto-play khi user tương tác (DISABLED - sử dụng popup thay thế)
+     */
+    setupUserInteractionPlay() {
+        console.log('⚠️ setupUserInteractionPlay disabled - using popup instead');
+        // Function này đã bị disable để tránh conflict với popup choice
+        // Main app sẽ xử lý user interaction thông qua popup
     }
 
     /**
@@ -222,39 +247,154 @@ class MP3AudioPlayer {
     }
 
     /**
-     * Track tiếp theo
+     * Track tiếp theo theo chế độ phát
      */
     async nextTrack() {
         if (this.playlist.length <= 1) return false;
-        
-        const nextIndex = (this.currentIndex + 1) % this.playlist.length;
+
+        let nextIndex;
+
+        switch (this.playMode) {
+            case 'loop':
+                // Lặp lại bài hiện tại
+                nextIndex = this.currentIndex;
+                break;
+
+            case 'random':
+                // Chọn ngẫu nhiên, tránh lặp lại gần đây
+                nextIndex = this.getRandomTrackIndex();
+                break;
+
+            case 'sequential':
+            default:
+                // Tuần tự
+                nextIndex = (this.currentIndex + 1) % this.playlist.length;
+                break;
+        }
+
         const wasPlaying = this.isPlaying;
-        
         await this.loadTrack(nextIndex);
-        
+
         if (wasPlaying) {
             await this.play();
         }
-        
+
         return true;
     }
 
     /**
-     * Track trước đó
+     * Track trước đó theo chế độ phát
      */
     async previousTrack() {
         if (this.playlist.length <= 1) return false;
-        
-        const prevIndex = (this.currentIndex - 1 + this.playlist.length) % this.playlist.length;
+
+        let prevIndex;
+
+        switch (this.playMode) {
+            case 'loop':
+                // Lặp lại bài hiện tại
+                prevIndex = this.currentIndex;
+                break;
+
+            case 'random':
+                // Lấy từ lịch sử hoặc random
+                prevIndex = this.getPrevRandomTrackIndex();
+                break;
+
+            case 'sequential':
+            default:
+                // Tuần tự ngược
+                prevIndex = (this.currentIndex - 1 + this.playlist.length) % this.playlist.length;
+                break;
+        }
+
         const wasPlaying = this.isPlaying;
-        
         await this.loadTrack(prevIndex);
-        
+
         if (wasPlaying) {
             await this.play();
         }
-        
+
         return true;
+    }
+
+    /**
+     * Lấy index ngẫu nhiên, tránh lặp lại gần đây
+     */
+    getRandomTrackIndex() {
+        if (this.playlist.length <= 1) return 0;
+
+        // Nếu đã phát hết tất cả bài, reset lịch sử
+        if (this.playHistory.length >= this.playlist.length) {
+            this.playHistory = [this.currentIndex];
+        }
+
+        let availableIndexes = [];
+        for (let i = 0; i < this.playlist.length; i++) {
+            if (!this.playHistory.includes(i)) {
+                availableIndexes.push(i);
+            }
+        }
+
+        // Nếu không còn bài nào khả dụng, chọn ngẫu nhiên
+        if (availableIndexes.length === 0) {
+            availableIndexes = Array.from({length: this.playlist.length}, (_, i) => i);
+        }
+
+        const randomIndex = availableIndexes[Math.floor(Math.random() * availableIndexes.length)];
+        this.playHistory.push(randomIndex);
+
+        return randomIndex;
+    }
+
+    /**
+     * Lấy bài trước đó từ lịch sử random
+     */
+    getPrevRandomTrackIndex() {
+        if (this.playHistory.length > 1) {
+            // Xóa bài hiện tại và lấy bài trước đó
+            this.playHistory.pop();
+            return this.playHistory[this.playHistory.length - 1];
+        }
+
+        // Nếu không có lịch sử, chọn ngẫu nhiên
+        return this.getRandomTrackIndex();
+    }
+
+    /**
+     * Set chế độ phát
+     */
+    setPlayMode(mode) {
+        this.playMode = mode;
+        console.log(`🎵 Play mode changed to: ${mode}`);
+
+        // Reset lịch sử khi chuyển mode
+        this.playHistory = [this.currentIndex];
+    }
+
+    /**
+     * Chuyển đến track cụ thể
+     */
+    async selectTrack(index) {
+        if (index < 0 || index >= this.playlist.length) {
+            console.warn('⚠️ Invalid track index:', index);
+            return false;
+        }
+
+        const wasPlaying = this.isPlaying;
+        const success = await this.loadTrack(index);
+
+        if (success) {
+            // Cập nhật lịch sử
+            this.playHistory.push(index);
+            console.log(`🎵 Selected track: ${this.currentTrack.name}`);
+
+            if (wasPlaying) {
+                await this.play();
+            }
+        }
+
+        return success;
     }
 
     /**
@@ -272,6 +412,13 @@ class MP3AudioPlayer {
      */
     getCurrentTrack() {
         return this.currentTrack;
+    }
+
+    /**
+     * Lấy playlist
+     */
+    getPlaylist() {
+        return this.playlist;
     }
 
     /**
