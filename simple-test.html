@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple 3D Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            color: white;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+        }
+        
+        #info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.8);
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 100;
+        }
+        
+        #canvas {
+            display: block;
+        }
+        
+        .status {
+            margin: 5px 0;
+        }
+        
+        .success { color: #4CAF50; }
+        .error { color: #f44336; }
+        .warning { color: #ff9800; }
+    </style>
+</head>
+<body>
+    <div id="info">
+        <h3>🧪 Simple 3D Test</h3>
+        <div id="status">Đang tải...</div>
+    </div>
+    
+    <canvas id="canvas"></canvas>
+
+    <script>
+        const statusDiv = document.getElementById('status');
+        
+        function addStatus(message, type = 'success') {
+            const div = document.createElement('div');
+            div.className = `status ${type}`;
+            div.textContent = message;
+            statusDiv.appendChild(div);
+            console.log(message);
+        }
+        
+        // Load Three.js dynamically
+        function loadThreeJS() {
+            return new Promise((resolve, reject) => {
+                addStatus('📦 Đang tải Three.js...', 'warning');
+                
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r155/three.min.js';
+                
+                script.onload = function() {
+                    addStatus('✅ Three.js đã tải thành công', 'success');
+                    resolve();
+                };
+                
+                script.onerror = function() {
+                    addStatus('❌ Lỗi tải Three.js từ CDN chính', 'error');
+                    
+                    // Try backup
+                    const backupScript = document.createElement('script');
+                    backupScript.src = 'https://unpkg.com/three@0.155.0/build/three.min.js';
+                    
+                    backupScript.onload = function() {
+                        addStatus('✅ Three.js đã tải từ CDN backup', 'success');
+                        resolve();
+                    };
+                    
+                    backupScript.onerror = function() {
+                        addStatus('❌ Tất cả CDN đều thất bại', 'error');
+                        reject(new Error('Failed to load Three.js'));
+                    };
+                    
+                    document.head.appendChild(backupScript);
+                };
+                
+                document.head.appendChild(script);
+            });
+        }
+        
+        // Simple 3D scene
+        function createScene() {
+            addStatus('🎬 Tạo scene 3D...', 'warning');
+            
+            // Check Three.js
+            if (typeof THREE === 'undefined') {
+                throw new Error('Three.js not loaded');
+            }
+            
+            addStatus(`📋 Three.js version: ${THREE.REVISION}`, 'success');
+            
+            // Scene
+            const scene = new THREE.Scene();
+            
+            // Camera
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 5;
+            
+            // Renderer
+            const canvas = document.getElementById('canvas');
+            const renderer = new THREE.WebGLRenderer({ canvas: canvas });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            
+            addStatus('✅ WebGL Renderer tạo thành công', 'success');
+            
+            // Create falling text
+            const texts = ['Hello', 'World', 'Three.js'];
+            const objects = [];
+            
+            texts.forEach((text, index) => {
+                // Create canvas texture (transparent background)
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = 256;
+                canvas.height = 256;
+
+                // Clear canvas (transparent)
+                ctx.clearRect(0, 0, 256, 256);
+
+                // Draw text with glow
+                ctx.font = 'bold 48px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                // Glow effect
+                ctx.shadowColor = `hsl(${index * 120}, 100%, 70%)`;
+                ctx.shadowBlur = 15;
+                ctx.shadowOffsetX = 0;
+                ctx.shadowOffsetY = 0;
+
+                // Outline
+                ctx.strokeStyle = `hsl(${index * 120}, 100%, 80%)`;
+                ctx.lineWidth = 2;
+                ctx.strokeText(text, 128, 128);
+
+                // Fill text
+                ctx.fillStyle = `hsl(${index * 120}, 100%, 90%)`;
+                ctx.fillText(text, 128, 128);
+
+                // Create texture and material
+                const texture = new THREE.CanvasTexture(canvas);
+                const material = new THREE.MeshBasicMaterial({
+                    map: texture,
+                    transparent: true,
+                    alphaTest: 0.1
+                });
+
+                // Create plane
+                const geometry = new THREE.PlaneGeometry(2, 2);
+                const mesh = new THREE.Mesh(geometry, material);
+
+                // Spherical position
+                const radius = 8;
+                const theta = (index / texts.length) * Math.PI * 2;
+                const phi = Math.PI / 3;
+
+                mesh.position.x = radius * Math.sin(phi) * Math.cos(theta);
+                // Phân bố đều từ trên xuống để không có khoảng trống
+                const fallDistance = 20; // Từ Y=10 đến Y=-10
+                const progress = index / texts.length;
+                mesh.position.y = -10 + (fallDistance * progress) + Math.random() * 2;
+                mesh.position.z = radius * Math.sin(phi) * Math.sin(theta);
+
+                // Hiệu ứng spawn
+                mesh.scale.setScalar(0);
+
+                // Add to scene
+                scene.add(mesh);
+                objects.push({
+                    mesh: mesh,
+                    fallSpeed: 0.02 + Math.random() * 0.02,
+                    spawnTime: Date.now() + (index * 200), // Delay 200ms mỗi object
+                    isSpawning: true
+                });
+            });
+            
+            addStatus(`✅ Tạo ${objects.length} đối tượng rơi`, 'success');
+            
+            // Animation loop
+            function animate() {
+                requestAnimationFrame(animate);
+                const currentTime = Date.now();
+
+                // Update falling objects
+                objects.forEach((obj, index) => {
+                    // Handle spawn animation
+                    if (obj.isSpawning) {
+                        if (currentTime >= obj.spawnTime) {
+                            const spawnDuration = 400;
+                            const elapsed = currentTime - obj.spawnTime;
+                            const progress = Math.min(elapsed / spawnDuration, 1);
+
+                            // Easing function
+                            const easeOut = 1 - Math.pow(1 - progress, 3);
+                            obj.mesh.scale.setScalar(easeOut);
+
+                            if (progress >= 1) {
+                                obj.isSpawning = false;
+                            }
+                        }
+                        return; // Don't fall while spawning
+                    }
+
+                    // Billboarding - always face camera
+                    obj.mesh.lookAt(camera.position);
+
+                    // Fall straight down (Y-axis only) - only if not paused
+                    if (!obj.isPaused) {
+                        obj.mesh.position.y -= obj.fallSpeed;
+
+                        // Reset position when too low - respawn in spherical distribution
+                        if (obj.mesh.position.y < -10) {
+                            const radius = 8;
+                            const theta = Math.random() * Math.PI * 2;
+                            const phi = Math.acos(2 * Math.random() - 1);
+
+                            obj.mesh.position.x = radius * Math.sin(phi) * Math.cos(theta);
+                            obj.mesh.position.y = 10 + Math.random() * 5;
+                            obj.mesh.position.z = radius * Math.sin(phi) * Math.sin(theta);
+                        }
+                    }
+                });
+
+                renderer.render(scene, camera);
+            }
+            
+            animate();
+            addStatus('🎮 Animation loop bắt đầu', 'success');
+            
+            // Handle resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            // Add interaction
+            let selectedObject = null;
+            const raycaster = new THREE.Raycaster();
+            const mouse = new THREE.Vector2();
+
+            // Click to select/deselect
+            canvas.addEventListener('click', (event) => {
+                const rect = canvas.getBoundingClientRect();
+                mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+                mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects(objects.map(obj => obj.mesh));
+
+                if (intersects.length > 0) {
+                    // Select object
+                    if (selectedObject) {
+                        selectedObject.isPaused = false;
+                        selectedObject.mesh.scale.setScalar(1);
+                    }
+
+                    const clickedObj = objects.find(obj => obj.mesh === intersects[0].object);
+                    selectedObject = clickedObj;
+                    selectedObject.isPaused = true;
+                    selectedObject.mesh.scale.setScalar(1.2);
+
+                    addStatus(`🎯 Selected: ${selectedObject.mesh.userData.text}`, 'warning');
+                } else {
+                    // Deselect
+                    if (selectedObject) {
+                        selectedObject.isPaused = false;
+                        selectedObject.mesh.scale.setScalar(1);
+                        addStatus('🔄 Deselected', 'warning');
+                        selectedObject = null;
+                    }
+                }
+            });
+
+            // Scroll wheel to zoom selected object
+            canvas.addEventListener('wheel', (event) => {
+                event.preventDefault();
+
+                if (selectedObject) {
+                    const delta = event.deltaY > 0 ? -0.1 : 0.1;
+                    const currentScale = selectedObject.mesh.scale.x;
+                    const newScale = Math.max(0.5, Math.min(3, currentScale + delta));
+                    selectedObject.mesh.scale.setScalar(newScale);
+
+                    addStatus(`🔍 Zoom: ${newScale.toFixed(1)}x`, 'success');
+                }
+            });
+
+            // Store text in mesh userData
+            objects.forEach((obj, index) => {
+                obj.mesh.userData.text = texts[index];
+            });
+        }
+        
+        // Main initialization
+        async function init() {
+            try {
+                await loadThreeJS();
+                createScene();
+                addStatus('🎉 Demo hoàn thành!', 'success');
+            } catch (error) {
+                addStatus(`❌ Lỗi: ${error.message}`, 'error');
+                console.error('Error:', error);
+            }
+        }
+        
+        // Start when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Audio Files</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #000;
+            color: white;
+            padding: 20px;
+        }
+        
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        
+        .success { background: #4CAF50; }
+        .error { background: #f44336; }
+        .warning { background: #ff9800; }
+        
+        audio {
+            width: 100%;
+            margin: 10px 0;
+        }
+        
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            background: #2196F3;
+            color: white;
+            cursor: pointer;
+        }
+        
+        button:hover {
+            background: #1976D2;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Audio Files</h1>
+    
+    <div id="test-results"></div>
+    
+    <div id="audio-controls"></div>
+    
+    <script>
+        const results = document.getElementById('test-results');
+        const controls = document.getElementById('audio-controls');
+        
+        function addResult(message, type = 'success') {
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.textContent = message;
+            results.appendChild(div);
+            console.log(message);
+        }
+        
+        // Test CSV loading
+        async function testCSVLoading() {
+            addResult('🔍 Testing CSV loading...', 'warning');
+            
+            try {
+                const response = await fetch('audio/playlist.csv');
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const text = await response.text();
+                addResult('✅ CSV loaded successfully', 'success');
+                
+                const lines = text.trim().split('\n');
+                const headers = lines[0].split(',');
+                
+                const tracks = lines.slice(1).map(line => {
+                    const values = line.split(',');
+                    const obj = {};
+                    headers.forEach((header, index) => {
+                        obj[header.trim()] = values[index] ? values[index].trim() : '';
+                    });
+                    return obj;
+                });
+                
+                addResult(`📋 Found ${tracks.length} tracks in CSV`, 'success');
+                
+                // Test each audio file
+                for (const track of tracks) {
+                    await testAudioFile(track);
+                }
+                
+            } catch (error) {
+                addResult(`❌ CSV loading failed: ${error.message}`, 'error');
+            }
+        }
+        
+        // Test individual audio file
+        async function testAudioFile(track) {
+            const audioPath = `audio/${track.filename}`;
+            addResult(`🎵 Testing: ${track.name} (${audioPath})`, 'warning');
+            
+            try {
+                // Test if file exists
+                const response = await fetch(audioPath, { method: 'HEAD' });
+                if (!response.ok) {
+                    throw new Error(`File not found: HTTP ${response.status}`);
+                }
+                
+                addResult(`✅ File exists: ${track.filename}`, 'success');
+                
+                // Test audio loading
+                const audio = new Audio();
+                audio.src = audioPath;
+                audio.preload = 'metadata';
+                
+                await new Promise((resolve, reject) => {
+                    audio.addEventListener('loadedmetadata', () => {
+                        addResult(`✅ Audio metadata loaded: ${track.name} (${Math.round(audio.duration)}s)`, 'success');
+                        resolve();
+                    });
+                    
+                    audio.addEventListener('error', (e) => {
+                        reject(new Error(`Audio load error: ${e.target.error?.message || 'Unknown error'}`));
+                    });
+                    
+                    setTimeout(() => {
+                        reject(new Error('Timeout loading metadata'));
+                    }, 5000);
+                    
+                    audio.load();
+                });
+                
+                // Add audio control
+                const audioControl = document.createElement('div');
+                audioControl.innerHTML = `
+                    <h3>${track.name} - ${track.artist}</h3>
+                    <audio controls>
+                        <source src="${audioPath}" type="audio/mpeg">
+                        Your browser does not support the audio element.
+                    </audio>
+                `;
+                controls.appendChild(audioControl);
+                
+            } catch (error) {
+                addResult(`❌ Audio test failed: ${track.filename} - ${error.message}`, 'error');
+            }
+        }
+        
+        // Test Web Audio API
+        function testWebAudioAPI() {
+            addResult('🔊 Testing Web Audio API...', 'warning');
+            
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                addResult('✅ Web Audio API supported', 'success');
+                addResult(`📊 Sample rate: ${audioContext.sampleRate}Hz`, 'success');
+                addResult(`🔧 State: ${audioContext.state}`, 'success');
+            } catch (error) {
+                addResult(`❌ Web Audio API not supported: ${error.message}`, 'error');
+            }
+        }
+        
+        // Test HTML5 Audio
+        function testHTML5Audio() {
+            addResult('🎵 Testing HTML5 Audio...', 'warning');
+            
+            const audio = new Audio();
+            const formats = [
+                { ext: 'mp3', mime: 'audio/mpeg' },
+                { ext: 'wav', mime: 'audio/wav' },
+                { ext: 'ogg', mime: 'audio/ogg' },
+                { ext: 'm4a', mime: 'audio/mp4' }
+            ];
+            
+            formats.forEach(format => {
+                const support = audio.canPlayType(format.mime);
+                if (support === 'probably') {
+                    addResult(`✅ ${format.ext.toUpperCase()}: Fully supported`, 'success');
+                } else if (support === 'maybe') {
+                    addResult(`⚠️ ${format.ext.toUpperCase()}: Partially supported`, 'warning');
+                } else {
+                    addResult(`❌ ${format.ext.toUpperCase()}: Not supported`, 'error');
+                }
+            });
+        }
+        
+        // Run all tests
+        async function runAllTests() {
+            addResult('🚀 Starting audio tests...', 'warning');
+            
+            testWebAudioAPI();
+            testHTML5Audio();
+            await testCSVLoading();
+            
+            addResult('🏁 All tests completed!', 'success');
+        }
+        
+        // Start tests when page loads
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', runAllTests);
+        } else {
+            runAllTests();
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,1982 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Rain Effect - Văn bản & Hình ảnh rơi</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #000;
+            overflow: hidden;
+            color: white;
+            user-select: none;
+        }
+
+        #container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            cursor: grab;
+        }
+
+        #canvas:active {
+            cursor: grabbing;
+        }
+
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 30px;
+            border-radius: 15px;
+            border: 2px solid #00ffff;
+        }
+
+        #loading.hidden {
+            display: none;
+        }
+
+        #controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #00ffff;
+            min-width: 280px;
+            z-index: 10;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            /* Ẩn mặc định */
+            transform: translateX(-100%);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #controls.visible {
+            transform: translateX(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+
+
+        #info {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #ff6b6b;
+            max-width: 300px;
+            font-size: 14px;
+            z-index: 10;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            /* Ẩn mặc định */
+            transform: translateX(100%);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #info.visible {
+            transform: translateX(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+
+
+        #webgl-error {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            background: rgba(255, 0, 0, 0.9);
+            padding: 30px;
+            border-radius: 15px;
+            display: none;
+            z-index: 200;
+        }
+
+        .spinner {
+            border: 4px solid #333;
+            border-top: 4px solid #00ffff;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #00ffff;
+            font-weight: bold;
+        }
+
+        select, button, input[type="range"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #00ffff;
+            border-radius: 5px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            font-size: 14px;
+        }
+
+        button {
+            background: linear-gradient(45deg, #00ffff, #ff6b6b);
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 255, 255, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .status {
+            color: #ff6b6b;
+            font-weight: bold;
+        }
+
+        .value-display {
+            color: #00ffff;
+            font-weight: bold;
+        }
+
+        /* Main settings button */
+        #main-settings:hover {
+            background: rgba(0, 255, 255, 1) !important;
+            transform: scale(1.05);
+            box-shadow: 0 4px 20px rgba(0, 255, 255, 0.5);
+        }
+
+        /* Toggle buttons trong controls */
+        #toggle-info:hover {
+            /*background: rgba(255, 107, 107, 1) !important;*/
+            transform: scale(1.05);
+        }
+
+        #toggle-controls:hover {
+            /*background: rgba(255, 193, 7, 1) !important;*/
+            transform: scale(1.05);
+        }
+
+        @media (max-width: 768px) {
+            #controls {
+                top: 10px;
+                left: 10px;
+                right: 10px;
+                min-width: auto;
+                padding: 15px;
+            }
+            
+            #info {
+                bottom: 10px;
+                right: 10px;
+                left: 10px;
+                max-width: none;
+                font-size: 12px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            #controls {
+                font-size: 12px;
+            }
+            
+            select, button, input[type="range"] {
+                font-size: 12px;
+                padding: 6px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <canvas id="canvas"></canvas>
+
+        <div id="loading">
+            <div class="spinner"></div>
+            <h3>Đang tải cảnh 3D...</h3>
+            <p>Chuẩn bị các đối tượng rơi</p>
+        </div>
+
+        <!-- Main Settings Button -->
+        <button id="main-settings" style="position: absolute; top: 20px; left: 20px; background: transparent; color: black; border: none; padding: 12px 18px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; z-index: 11; box-shadow: none;" title="Mở cài đặt">⚙️ Settings</button>
+
+
+
+        <div id="controls">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="color: #00ffff; margin: 0;">🎮 Điều khiển</h3>
+                <div>
+                    <button id="toggle-info" title="Ẩn/Hiện hướng dẫn" style="background: transparent; color: white; border: none; padding: 5px; border-radius: 5px; cursor: pointer; margin-right: 8px; font-size: 14px;">❓</button>
+                    <button id="toggle-controls" title="Ẩn điều khiển" style="background: transparent; color: black; border: none; padding: 5px; border-radius: 5px; cursor: pointer; font-size: 14px;">🔽</button>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <label for="mode-select">Chế độ hiển thị:</label>
+                <select id="mode-select">
+                    <option value="text">📝 Văn bản</option>
+                    <option value="images">🖼️ Hình ảnh</option>
+                    <option value="mixed">🎭 Kết hợp</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="object-count">Số lượng đối tượng: <span id="count-value" class="value-display">120</span></label>
+                <input type="range" id="object-count" min="20" max="500" value="120">
+            </div>
+
+            <div class="control-group">
+                <label for="fall-speed">Tốc độ rơi: <span id="speed-value" class="value-display">5</span></label>
+                <input type="range" id="fall-speed" min="1" max="10" step="1" value="5">
+            </div>
+
+            <div class="control-group">
+                <button id="add-objects">➕ Thêm đối tượng</button>
+            </div>
+
+            <div class="control-group">
+                <button id="clear-objects">🗑️ Xóa tất cả</button>
+            </div>
+
+            <div class="control-group">
+                <button id="reload-data">🔄 Tải lại dữ liệu</button>
+            </div>
+
+            <div class="control-group">
+                <label for="music-type">Loại nhạc:</label>
+                <select id="music-type">
+                    <option value="ambient">🎹 Ambient (Web Audio)</option>
+                    <option value="mp3">🎵 MP3 Files</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <button id="toggle-music">🎵 Bật/Tắt nhạc</button>
+            </div>
+
+            <div class="control-group">
+                <button id="next-track" style="display: none;">⏭️ Bài tiếp</button>
+            </div>
+
+            <div class="control-group">
+                <label for="music-volume">Âm lượng nhạc:</label>
+                <input type="range" id="music-volume" min="0" max="1" step="0.1" value="0.1">
+                <span id="volume-value">10%</span>
+            </div>
+
+            <div class="control-group" id="current-track-info" style="display: none;">
+                <p><strong>Đang phát:</strong></p>
+                <p class="status" id="current-track">Không có</p>
+            </div>
+
+            <div class="control-group">
+                <p><strong>Đối tượng được chọn:</strong></p>
+                <p class="status" id="selected-object">Không có</p>
+            </div>
+
+            <div class="control-group">
+                <p><strong>Trạng thái:</strong></p>
+                <p class="status" id="data-status">Đang tải...</p>
+            </div>
+        </div>
+
+        <div id="info">
+            <h4>🎯 Hướng dẫn sử dụng</h4>
+            <ul style="margin: 10px 0; padding-left: 20px; font-size: 13px;">
+                <li>🖱️ <strong>Kéo chuột:</strong> Xoay camera</li>
+                <li>👆 <strong>Click phần tử:</strong> Dừng rơi</li>
+                <li>🔍 <strong>Scroll wheel:</strong> Zoom phần tử được chọn</li>
+                <li>🖱️ <strong>Click ra ngoài:</strong> Trở về bình thường</li>
+                <li>📱 <strong>Touch:</strong> Tap chọn, pinch zoom</li>
+            </ul>
+
+            <h5 style="color: #00ffff; margin: 10px 0 5px 0;">⌨️ Phím tắt:</h5>
+            <ul style="margin: 5px 0; padding-left: 20px; font-size: 12px;">
+                <li><strong>S:</strong> Mở settings (khi UI ẩn)</li>
+                <li><strong>C:</strong> Ẩn/hiện điều khiển</li>
+                <li><strong>H hoặc ?:</strong> Ẩn/hiện hướng dẫn</li>
+                <li><strong>Space:</strong> Bật/tắt nhạc</li>
+                <li><strong>Ctrl+R:</strong> Tải lại dữ liệu</li>
+                <li><strong>Esc:</strong> Bỏ chọn đối tượng</li>
+            </ul>
+
+            <p style="margin-top: 10px;"><strong>FPS:</strong> <span id="fps-counter" class="value-display">60</span></p>
+        </div>
+
+        <div id="webgl-error">
+            <h3>❌ Không hỗ trợ WebGL</h3>
+            <p>Trình duyệt của bạn không hỗ trợ WebGL. Vui lòng sử dụng Chrome, Firefox, Safari hoặc Edge phiên bản mới.</p>
+        </div>
+    </div>
+
+    <!-- Three.js CDN với loading management -->
+    <script>
+        // Global loading state
+        window.librariesLoaded = {
+            threejs: false,
+            orbitcontrols: false
+        };
+
+        // Load Three.js
+        function loadThreeJS() {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r155/three.min.js';
+
+                script.onload = function() {
+                    console.log('✅ Three.js loaded successfully');
+                    window.librariesLoaded.threejs = true;
+                    resolve();
+                };
+
+                script.onerror = function() {
+                    console.warn('⚠️ Primary CDN failed, trying backup...');
+                    loadThreeJSBackup().then(resolve).catch(reject);
+                };
+
+                document.head.appendChild(script);
+            });
+        }
+
+        // Backup Three.js loader
+        function loadThreeJSBackup() {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = 'https://unpkg.com/three@0.155.0/build/three.min.js';
+
+                script.onload = function() {
+                    console.log('✅ Three.js loaded from backup CDN');
+                    window.librariesLoaded.threejs = true;
+                    resolve();
+                };
+
+                script.onerror = function() {
+                    console.error('❌ All Three.js CDNs failed');
+                    document.getElementById('loading').innerHTML = `
+                        <h3>❌ Lỗi tải thư viện</h3>
+                        <p>Không thể tải Three.js. Vui lòng kiểm tra kết nối internet và thử lại.</p>
+                        <button onclick="location.reload()" style="margin-top: 10px; padding: 10px; background: #00ffff; border: none; border-radius: 5px; cursor: pointer;">🔄 Thử lại</button>
+                    `;
+                    reject(new Error('Failed to load Three.js'));
+                };
+
+                document.head.appendChild(script);
+            });
+        }
+
+        // Load OrbitControls
+        function loadOrbitControls() {
+            return new Promise((resolve) => {
+                const script = document.createElement('script');
+                script.src = 'https://threejs.org/examples/js/controls/OrbitControls.js';
+
+                script.onload = function() {
+                    console.log('✅ OrbitControls loaded successfully');
+                    window.librariesLoaded.orbitcontrols = true;
+                    resolve();
+                };
+
+                script.onerror = function() {
+                    console.warn('⚠️ OrbitControls failed to load, will use basic controls');
+                    window.librariesLoaded.orbitcontrols = false;
+                    resolve(); // Don't reject, just continue without OrbitControls
+                };
+
+                document.head.appendChild(script);
+            });
+        }
+
+        // Load all libraries sequentially
+        async function loadAllLibraries() {
+            try {
+                await loadThreeJS();
+                await loadOrbitControls();
+                console.log('🎉 All libraries loaded successfully');
+                return true;
+            } catch (error) {
+                console.error('❌ Failed to load libraries:', error);
+                return false;
+            }
+        }
+
+        // Start loading immediately
+        loadAllLibraries();
+    </script>
+
+    <!-- Audio Systems -->
+    <script src="audio/ambient-music.js"></script>
+    <script src="audio/mp3-player.js"></script>
+
+    <script>
+        /**
+         * 3D Rain Effect Demo - Văn bản và Hình ảnh rơi tương tác
+         * Tác giả: AI Assistant
+         * Phiên bản: 1.0
+         */
+
+        // Cấu hình chính
+        const CONFIG = {
+            // File paths
+            TEXT_CSV: 'text/words.csv',
+            IMAGES_CSV: 'images/images.csv',
+            IMAGES_PATH: 'images/',
+            AUDIO_CSV: 'audio/playlist.csv',
+            AUDIO_PATH: 'audio/',
+
+            // Danh sách văn bản (sẽ được load từ CSV)
+            WORDS: [],
+
+            // Danh sách hình ảnh (sẽ được load từ CSV)
+            IMAGES: [],
+            
+            // Tham số rơi
+            FALL_SPEED: { min: 0.015, max: 0.025 },
+            RESPAWN_Y: 60,
+            DESPAWN_Y: -60,
+            SPREAD_AREA: 100,
+            
+            // Tham số đối tượng
+            OBJECT_SIZE: { min: 2, max: 40 },
+            FONT_SIZE: 64,
+            
+            // Tham số camera
+            CAMERA_DISTANCE: 30,
+            ZOOM_RANGE: { min: 5, max: 100 },
+            
+            // Tham số tương tác
+            SCALE_RANGE: { min: 0.5, max: 10 },
+            HOVER_SCALE: 1.2,
+            SELECT_SCALE: 1.5
+        };
+
+        // Biến toàn cục
+        let scene, camera, renderer, controls;
+        let objects = [];
+        let selectedObject = null;
+        let raycaster, mouse;
+        let isInteracting = false;
+        let currentMode = 'text';
+        let fallSpeedMultiplier = 5;
+
+        // Music system
+        let musicGenerator = null;
+        let mp3Player = null;
+        let isMusicPlaying = false;
+        let currentMusicType = 'ambient'; // 'ambient' or 'mp3'
+
+        // Data loading
+        let dataLoaded = false;
+
+        // UI state - mặc định ẩn tất cả
+        let controlsVisible = false;
+        let infoVisible = false;
+
+        // FPS tracking
+        let frameCount = 0;
+        let lastTime = performance.now();
+        let fps = 60;
+
+        // Khởi tạo ứng dụng khi DOM và libraries đã sẵn sàng
+        async function startApp() {
+            console.log('🚀 Starting application...');
+
+            // Đợi DOM sẵn sàng
+            if (document.readyState === 'loading') {
+                await new Promise(resolve => {
+                    document.addEventListener('DOMContentLoaded', resolve);
+                });
+            }
+
+            // Đợi libraries load xong
+            let attempts = 0;
+            const maxAttempts = 50; // 5 seconds max
+
+            while (attempts < maxAttempts) {
+                if (window.librariesLoaded && window.librariesLoaded.threejs) {
+                    console.log('📚 Libraries ready, initializing...');
+                    init();
+                    return;
+                }
+
+                console.log(`⏳ Waiting for libraries... (${attempts + 1}/${maxAttempts})`);
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+
+            // Timeout - show error
+            console.error('❌ Timeout waiting for libraries');
+            document.getElementById('loading').innerHTML = `
+                <h3>❌ Timeout</h3>
+                <p>Thư viện tải quá lâu. Vui lòng kiểm tra kết nối internet.</p>
+                <button onclick="location.reload()" style="margin-top: 10px; padding: 10px; background: #00ffff; border: none; border-radius: 5px; cursor: pointer;">🔄 Thử lại</button>
+            `;
+        }
+
+        // Bắt đầu ứng dụng
+        startApp();
+
+        /**
+         * Kiểm tra hỗ trợ WebGL
+         */
+        function checkWebGLSupport() {
+            try {
+                const canvas = document.createElement('canvas');
+                const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+                return !!gl;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        /**
+         * Khởi tạo cảnh 3D và bắt đầu animation
+         */
+        function init() {
+            console.log('🎬 Initializing 3D scene...');
+
+            // Kiểm tra WebGL trước
+            if (!checkWebGLSupport()) {
+                console.error('❌ WebGL không được hỗ trợ');
+                showWebGLError();
+                return;
+            }
+
+            // Kiểm tra Three.js đã load chưa
+            if (typeof THREE === 'undefined') {
+                console.error('❌ Three.js chưa được tải');
+                document.getElementById('loading').innerHTML = `
+                    <h3>❌ Lỗi khởi tạo</h3>
+                    <p>Three.js chưa được tải. Đang thử lại...</p>
+                `;
+                setTimeout(init, 500); // Thử lại sau 500ms
+                return;
+            }
+
+            // Log Three.js version
+            console.log(`📦 Three.js version: ${THREE.REVISION}`);
+
+            try {
+                setupScene();
+                setupLighting();
+                setupBackground();
+                setupControls();
+                setupEventListeners();
+                loadDataFiles();
+                initMusicSystem();
+                createInitialObjects();
+                hideLoading();
+                animate();
+                console.log('✅ Khởi tạo thành công!');
+            } catch (error) {
+                console.error('❌ Lỗi khởi tạo cảnh 3D:', error);
+                console.error('Error details:', error);
+                showWebGLError();
+            }
+        }
+
+        /**
+         * Thiết lập scene, camera và renderer
+         */
+        function setupScene() {
+            // Tạo scene
+            scene = new THREE.Scene();
+
+            // Tạo camera
+            camera = new THREE.PerspectiveCamera(
+                75,
+                window.innerWidth / window.innerHeight,
+                0.1,
+                2000
+            );
+            camera.position.set(0, 0, CONFIG.CAMERA_DISTANCE);
+
+            // Tạo renderer với error handling
+            const canvas = document.getElementById('canvas');
+            try {
+                renderer = new THREE.WebGLRenderer({
+                    canvas: canvas,
+                    antialias: true,
+                    alpha: true,
+                    powerPreference: "high-performance"
+                });
+            } catch (error) {
+                console.error('❌ Không thể tạo WebGL renderer:', error);
+                throw new Error('WebGL không được hỗ trợ hoặc bị vô hiệu hóa');
+            }
+
+            // Kiểm tra WebGL context
+            const gl = renderer.getContext();
+            if (!gl) {
+                throw new Error('Không thể lấy WebGL context');
+            }
+
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+            // Tắt shadow nếu không hỗ trợ để tăng tương thích
+            try {
+                renderer.shadowMap.enabled = true;
+                renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            } catch (error) {
+                console.warn('⚠️ Shadow mapping không được hỗ trợ, tắt shadows');
+                renderer.shadowMap.enabled = false;
+            }
+
+            // Tạo raycaster cho tương tác
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+        }
+
+        /**
+         * Thiết lập ánh sáng cho scene
+         */
+        function setupLighting() {
+            // Ánh sáng môi trường
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.4);
+            scene.add(ambientLight);
+
+            // Ánh sáng định hướng
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(10, 10, 5);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            scene.add(directionalLight);
+
+            // Ánh sáng điểm để tạo hiệu ứng
+            const pointLight = new THREE.PointLight(0x00ffff, 0.5, 100);
+            pointLight.position.set(0, 20, 10);
+            scene.add(pointLight);
+        }
+
+        /**
+         * Tạo background không gian với các vì sao lấp lánh
+         */
+        function setupBackground() {
+            // Tạo starfield với nhiều kích thước khác nhau
+            const starsGeometry = new THREE.BufferGeometry();
+            const starsVertices = [];
+            const starsSizes = [];
+            const starsColors = [];
+
+            for (let i = 0; i < 20000; i++) {
+                const x = (Math.random() - 0.5) * 2000;
+                const y = (Math.random() - 0.5) * 2000;
+                const z = (Math.random() - 0.5) * 2000;
+                starsVertices.push(x, y, z);
+
+                // Kích thước ngẫu nhiên từ 2-8
+                starsSizes.push(2 + Math.random() * 6);
+
+                // Màu sắc ngẫu nhiên (trắng, xanh nhạt, vàng nhạt)
+                const colorVariant = Math.random();
+                if (colorVariant < 0.7) {
+                    starsColors.push(1, 1, 1); // Trắng
+                } else if (colorVariant < 0.85) {
+                    starsColors.push(0.8, 0.9, 1); // Xanh nhạt
+                } else {
+                    starsColors.push(1, 1, 0.8); // Vàng nhạt
+                }
+            }
+
+            starsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starsVertices, 3));
+            starsGeometry.setAttribute('size', new THREE.Float32BufferAttribute(starsSizes, 1));
+            starsGeometry.setAttribute('color', new THREE.Float32BufferAttribute(starsColors, 3));
+
+            // Shader material cho hiệu ứng lấp lánh
+            const starsMaterial = new THREE.ShaderMaterial({
+                uniforms: {
+                    time: { value: 0 }
+                },
+                vertexShader: `
+                    attribute float size;
+                    attribute vec3 color;
+                    varying vec3 vColor;
+                    varying float vSize;
+                    uniform float time;
+
+                    void main() {
+                        vColor = color;
+                        vSize = size;
+
+                        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+
+                        // Hiệu ứng lấp lánh
+                        float twinkle = sin(time * 2.0 + position.x * 0.01 + position.y * 0.01) * 0.5 + 0.5;
+                        gl_PointSize = size * (0.5 + twinkle * 0.5);
+
+                        gl_Position = projectionMatrix * mvPosition;
+                    }
+                `,
+                fragmentShader: `
+                    varying vec3 vColor;
+                    uniform float time;
+
+                    void main() {
+                        float distance = length(gl_PointCoord - vec2(0.5));
+                        if (distance > 0.5) discard;
+
+                        // Hiệu ứng glow
+                        float alpha = 1.0 - distance * 2.0;
+                        alpha = pow(alpha, 2.0);
+
+                        gl_FragColor = vec4(vColor, alpha);
+                    }
+                `,
+                transparent: true,
+                blending: THREE.AdditiveBlending
+            });
+
+            const starField = new THREE.Points(starsGeometry, starsMaterial);
+            scene.add(starField);
+
+            // Lưu reference để animate
+            scene.userData.starField = starField;
+            scene.userData.starsMaterial = starsMaterial;
+
+            // Tạo nebula background
+            const nebulaGeometry = new THREE.SphereGeometry(1000, 32, 32);
+            const nebulaMaterial = new THREE.MeshBasicMaterial({
+                color: 0x000033,
+                transparent: true,
+                opacity: 0.3,
+                side: THREE.BackSide
+            });
+            const nebula = new THREE.Mesh(nebulaGeometry, nebulaMaterial);
+            scene.add(nebula);
+        }
+
+        /**
+         * Thiết lập điều khiển camera
+         */
+        function setupControls() {
+            // Kiểm tra OrbitControls có sẵn không
+            if (typeof THREE.OrbitControls === 'undefined') {
+                console.warn('⚠️ OrbitControls không có sẵn, sử dụng điều khiển cơ bản');
+                setupBasicControls();
+                return;
+            }
+
+            try {
+                controls = new THREE.OrbitControls(camera, renderer.domElement);
+                controls.enableDamping = true;
+                controls.dampingFactor = 0.05;
+                controls.minDistance = CONFIG.ZOOM_RANGE.min;
+                controls.maxDistance = CONFIG.ZOOM_RANGE.max;
+                controls.enablePan = false;
+                controls.autoRotate = false;
+                controls.autoRotateSpeed = 0.5;
+            } catch (error) {
+                console.warn('⚠️ Lỗi khởi tạo OrbitControls:', error);
+                setupBasicControls();
+            }
+        }
+
+        /**
+         * Thiết lập điều khiển camera cơ bản (fallback)
+         */
+        function setupBasicControls() {
+            let isMouseDown = false;
+            let mouseX = 0, mouseY = 0;
+            let cameraDistance = CONFIG.CAMERA_DISTANCE;
+
+            renderer.domElement.addEventListener('mousedown', (event) => {
+                isMouseDown = true;
+                mouseX = event.clientX;
+                mouseY = event.clientY;
+            });
+
+            renderer.domElement.addEventListener('mousemove', (event) => {
+                if (!isMouseDown) return;
+
+                const deltaX = event.clientX - mouseX;
+                const deltaY = event.clientY - mouseY;
+
+                // Xoay camera quanh scene
+                const spherical = new THREE.Spherical();
+                spherical.setFromVector3(camera.position);
+                spherical.theta -= deltaX * 0.01;
+                spherical.phi += deltaY * 0.01;
+                spherical.phi = Math.max(0.1, Math.min(Math.PI - 0.1, spherical.phi));
+
+                camera.position.setFromSpherical(spherical);
+                camera.lookAt(0, 0, 0);
+
+                mouseX = event.clientX;
+                mouseY = event.clientY;
+            });
+
+            renderer.domElement.addEventListener('mouseup', () => {
+                isMouseDown = false;
+            });
+
+            renderer.domElement.addEventListener('wheel', (event) => {
+                event.preventDefault();
+                cameraDistance += event.deltaY * 0.01;
+                cameraDistance = Math.max(CONFIG.ZOOM_RANGE.min, Math.min(CONFIG.ZOOM_RANGE.max, cameraDistance));
+
+                const direction = camera.position.clone().normalize();
+                camera.position.copy(direction.multiplyScalar(cameraDistance));
+            });
+
+            // Tạo object giả để tương thích với code khác
+            controls = {
+                update: () => {},
+                enableDamping: false
+            };
+        }
+
+        /**
+         * Thiết lập các event listener
+         */
+        function setupEventListeners() {
+            // Mouse events
+            renderer.domElement.addEventListener('click', onMouseClick, false);
+            renderer.domElement.addEventListener('mousemove', onMouseMove, false);
+            renderer.domElement.addEventListener('wheel', onMouseWheel, false);
+
+            // Touch events
+            renderer.domElement.addEventListener('touchstart', onTouchStart, false);
+            renderer.domElement.addEventListener('touchmove', onTouchMove, false);
+            renderer.domElement.addEventListener('touchend', onTouchEnd, false);
+
+            // Window resize
+            window.addEventListener('resize', onWindowResize, false);
+
+            // UI controls
+            document.getElementById('mode-select').addEventListener('change', onModeChange);
+            document.getElementById('object-count').addEventListener('input', onObjectCountChange);
+            document.getElementById('fall-speed').addEventListener('input', onFallSpeedChange);
+            document.getElementById('add-objects').addEventListener('click', addObjects);
+            document.getElementById('clear-objects').addEventListener('click', clearAllObjects);
+            document.getElementById('reload-data').addEventListener('click', reloadData);
+            document.getElementById('toggle-music').addEventListener('click', toggleMusic);
+            document.getElementById('next-track').addEventListener('click', nextTrack);
+            document.getElementById('music-type').addEventListener('change', onMusicTypeChange);
+            document.getElementById('music-volume').addEventListener('input', onVolumeChange);
+
+            // Main settings button
+            document.getElementById('main-settings').addEventListener('click', showSettings);
+
+            // Toggle buttons
+            document.getElementById('toggle-controls').addEventListener('click', toggleControls);
+            document.getElementById('toggle-info').addEventListener('click', toggleInfo);
+
+            // Keyboard shortcuts
+            document.addEventListener('keydown', onKeyDown);
+        }
+
+        /**
+         * Load data từ CSV files
+         */
+        async function loadDataFiles() {
+            updateDataStatus('Đang tải dữ liệu...');
+
+            try {
+                // Load text data
+                const textData = await loadCSV(CONFIG.TEXT_CSV);
+                CONFIG.WORDS = textData.map(row => ({
+                    text: row.text,
+                    category: row.category || 'default',
+                    hue: parseInt(row.color_hue) || Math.random() * 360
+                }));
+
+                // Load image data
+                const imageData = await loadCSV(CONFIG.IMAGES_CSV);
+                CONFIG.IMAGES = imageData.map(row => ({
+                    filename: row.filename,
+                    name: row.name,
+                    category: row.category || 'default',
+                    hue: parseInt(row.color_hue) || Math.random() * 360,
+                    path: CONFIG.IMAGES_PATH + row.filename
+                }));
+
+                // Load audio playlist
+                let audioCount = 0;
+                try {
+                    const audioData = await loadCSV(CONFIG.AUDIO_CSV);
+                    CONFIG.AUDIO_PLAYLIST = audioData.map(row => ({
+                        filename: row.filename,
+                        name: row.name || row.filename,
+                        artist: row.artist || 'Unknown',
+                        duration: parseInt(row.duration) || 0,
+                        category: row.category || 'music',
+                        path: CONFIG.AUDIO_PATH + row.filename
+                    }));
+                    audioCount = CONFIG.AUDIO_PLAYLIST.length;
+                } catch (error) {
+                    console.warn('⚠️ No audio playlist found');
+                    CONFIG.AUDIO_PLAYLIST = [];
+                }
+
+                dataLoaded = true;
+                updateDataStatus(`✅ Đã tải ${CONFIG.WORDS.length} từ, ${CONFIG.IMAGES.length} hình, ${audioCount} nhạc`);
+                console.log('📊 Data loaded:', {
+                    words: CONFIG.WORDS.length,
+                    images: CONFIG.IMAGES.length,
+                    audio: audioCount
+                });
+
+            } catch (error) {
+                console.error('❌ Lỗi tải dữ liệu:', error);
+                updateDataStatus('❌ Lỗi tải dữ liệu');
+
+                // Fallback data
+                CONFIG.WORDS = [
+                    { text: 'Hello', category: 'greeting', hue: 0 },
+                    { text: 'World', category: 'noun', hue: 120 },
+                    { text: 'Three.js', category: 'tech', hue: 240 }
+                ];
+                CONFIG.IMAGES = [];
+            }
+        }
+
+        /**
+         * Load CSV file
+         */
+        async function loadCSV(filepath) {
+            const response = await fetch(filepath);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const text = await response.text();
+            const lines = text.trim().split('\n');
+            const headers = lines[0].split(',');
+
+            return lines.slice(1).map(line => {
+                const values = line.split(',');
+                const obj = {};
+                headers.forEach((header, index) => {
+                    obj[header.trim()] = values[index] ? values[index].trim() : '';
+                });
+                return obj;
+            });
+        }
+
+        /**
+         * Khởi tạo hệ thống nhạc
+         */
+        async function initMusicSystem() {
+            // Khởi tạo Ambient Music Generator
+            if (typeof AmbientMusicGenerator !== 'undefined') {
+                musicGenerator = new AmbientMusicGenerator();
+                console.log('🎹 Ambient Music Generator initialized');
+            } else {
+                console.warn('⚠️ Ambient Music Generator not available');
+            }
+
+            // Khởi tạo MP3 Player
+            if (typeof MP3AudioPlayer !== 'undefined') {
+                mp3Player = new MP3AudioPlayer();
+
+                console.log('🔍 Checking audio playlist:', CONFIG.AUDIO_PLAYLIST);
+
+                if (CONFIG.AUDIO_PLAYLIST && CONFIG.AUDIO_PLAYLIST.length > 0) {
+                    console.log('🎵 Initializing MP3 Player with tracks:');
+                    CONFIG.AUDIO_PLAYLIST.forEach((track, index) => {
+                        console.log(`  Track ${index + 1}: ${track.name} (${track.path})`);
+                    });
+
+                    const success = await mp3Player.init(CONFIG.AUDIO_PLAYLIST);
+                    if (success) {
+                        console.log('✅ MP3 Player initialized successfully with', CONFIG.AUDIO_PLAYLIST.length, 'tracks');
+                        updateMusicUI();
+                    } else {
+                        console.error('❌ MP3 Player initialization failed');
+                        updateDataStatus('❌ Lỗi khởi tạo MP3 player');
+                    }
+                } else {
+                    console.log('⚠️ No audio tracks found in playlist');
+                    updateDataStatus('⚠️ Không có file MP3');
+                }
+            } else {
+                console.warn('⚠️ MP3 Player class not available');
+            }
+        }
+
+        /**
+         * Cập nhật trạng thái data
+         */
+        function updateDataStatus(message) {
+            const statusElement = document.getElementById('data-status');
+            if (statusElement) {
+                statusElement.textContent = message;
+            }
+        }
+
+        /**
+         * Tạo texture từ canvas cho văn bản (trong suốt, không background)
+         */
+        function createTextTexture(text, hue) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            // Kích thước canvas cao để đảm bảo chất lượng
+            canvas.width = 512;
+            canvas.height = 512;
+
+            // Xóa canvas (trong suốt)
+            ctx.clearRect(0, 0, 512, 512);
+
+            // Thiết lập font
+            ctx.font = `bold ${CONFIG.FONT_SIZE}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // Tạo hiệu ứng glow mạnh hơn
+            ctx.shadowColor = `hsl(${hue}, 100%, 70%)`;
+            ctx.shadowBlur = 20;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 0;
+
+            // Vẽ outline để text nổi bật hơn
+            ctx.strokeStyle = `hsl(${hue}, 100%, 80%)`;
+            ctx.lineWidth = 3;
+            ctx.strokeText(text, 256, 256);
+
+            // Vẽ text chính với màu sáng
+            ctx.fillStyle = `hsl(${hue}, 100%, 90%)`;
+            ctx.fillText(text, 256, 256);
+
+            return canvas;
+        }
+
+        /**
+         * Tạo texture hình ảnh đơn giản (geometric shapes)
+         */
+        function createImageTexture(type, hue) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            canvas.width = 512;
+            canvas.height = 512;
+
+            // Background gradient
+            const gradient = ctx.createRadialGradient(256, 256, 0, 256, 256, 256);
+            gradient.addColorStop(0, `hsla(${hue}, 80%, 60%, 0.9)`);
+            gradient.addColorStop(1, `hsla(${hue}, 60%, 30%, 0.3)`);
+
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 512, 512);
+
+            // Vẽ shape dựa trên type
+            ctx.fillStyle = `hsl(${hue}, 90%, 80%)`;
+            ctx.strokeStyle = `hsl(${hue}, 100%, 90%)`;
+            ctx.lineWidth = 8;
+
+            const centerX = 256;
+            const centerY = 256;
+            const size = 150;
+
+            switch(type) {
+                case 'circle':
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, size, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+                    break;
+
+                case 'square':
+                    ctx.fillRect(centerX - size, centerY - size, size * 2, size * 2);
+                    ctx.strokeRect(centerX - size, centerY - size, size * 2, size * 2);
+                    break;
+
+                case 'triangle':
+                    ctx.beginPath();
+                    ctx.moveTo(centerX, centerY - size);
+                    ctx.lineTo(centerX - size, centerY + size);
+                    ctx.lineTo(centerX + size, centerY + size);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                    break;
+
+                case 'star':
+                    drawStar(ctx, centerX, centerY, 5, size, size * 0.5);
+                    ctx.fill();
+                    ctx.stroke();
+                    break;
+            }
+
+            return canvas;
+        }
+
+        /**
+         * Vẽ hình sao
+         */
+        function drawStar(ctx, cx, cy, spikes, outerRadius, innerRadius) {
+            let rot = Math.PI / 2 * 3;
+            let x = cx;
+            let y = cy;
+            const step = Math.PI / spikes;
+
+            ctx.beginPath();
+            ctx.moveTo(cx, cy - outerRadius);
+
+            for (let i = 0; i < spikes; i++) {
+                x = cx + Math.cos(rot) * outerRadius;
+                y = cy + Math.sin(rot) * outerRadius;
+                ctx.lineTo(x, y);
+                rot += step;
+
+                x = cx + Math.cos(rot) * innerRadius;
+                y = cy + Math.sin(rot) * innerRadius;
+                ctx.lineTo(x, y);
+                rot += step;
+            }
+
+            ctx.lineTo(cx, cy - outerRadius);
+            ctx.closePath();
+        }
+
+        /**
+         * Tạo đối tượng 3D (văn bản hoặc hình ảnh)
+         */
+        function createObject(content, type, hue, imagePath = null) {
+            let texture;
+
+            if (type === 'text') {
+                texture = new THREE.CanvasTexture(createTextTexture(content, hue));
+            } else if (type === 'image' && imagePath) {
+                // Load image từ file
+                texture = new THREE.TextureLoader().load(
+                    imagePath,
+                    function(loadedTexture) {
+                        console.log(`✅ Loaded image: ${imagePath}`);
+                    },
+                    undefined,
+                    function(error) {
+                        console.warn(`⚠️ Failed to load image: ${imagePath}`, error);
+                    }
+                );
+            } else {
+                // Fallback to generated shapes
+                texture = new THREE.CanvasTexture(createImageTexture(content, hue));
+            }
+
+            texture.needsUpdate = true;
+
+            // Tạo material với hiệu ứng emissive
+            const material = new THREE.MeshBasicMaterial({
+                map: texture,
+                transparent: true,
+                alphaTest: 0.1,
+                emissive: new THREE.Color().setHSL(hue / 360, 0.6, 0.2),
+                emissiveIntensity: 0.4
+            });
+
+            // Tạo geometry
+            const size = CONFIG.OBJECT_SIZE.min + Math.random() * (CONFIG.OBJECT_SIZE.max - CONFIG.OBJECT_SIZE.min);
+            const geometry = new THREE.PlaneGeometry(size, size);
+
+            // Tạo mesh
+            const mesh = new THREE.Mesh(geometry, material);
+
+            // Vị trí ngẫu nhiên trên hình cầu (spherical distribution)
+            const radius = CONFIG.SPREAD_AREA * 0.8;
+            const theta = Math.random() * Math.PI * 2; // Góc ngang (0-360°)
+            const phi = Math.acos(2 * Math.random() - 1); // Góc dọc (phân bố đều trên cầu)
+
+            mesh.position.x = radius * Math.sin(phi) * Math.cos(theta);
+            mesh.position.y = CONFIG.RESPAWN_Y + Math.random() * 20; // Mặc định, sẽ được override
+            mesh.position.z = radius * Math.sin(phi) * Math.sin(theta);
+
+            // Thêm thông tin metadata
+            mesh.userData = {
+                content: content,
+                type: type,
+                hue: hue,
+                originalScale: 1,
+                fallSpeed: CONFIG.FALL_SPEED.min + Math.random() * (CONFIG.FALL_SPEED.max - CONFIG.FALL_SPEED.min),
+                isPaused: false,
+                isSelected: false,
+                rotationSpeed: (Math.random() - 0.5) * 0.02
+            };
+
+            return mesh;
+        }
+
+        /**
+         * Tạo các đối tượng ban đầu - phân bố đều từ trên xuống
+         */
+        function createInitialObjects() {
+            const count = parseInt(document.getElementById('object-count').value);
+
+            for (let i = 0; i < count; i++) {
+                let content, type, hue, imagePath = null;
+
+                if (currentMode === 'text') {
+                    if (CONFIG.WORDS.length > 0) {
+                        const wordData = CONFIG.WORDS[Math.floor(Math.random() * CONFIG.WORDS.length)];
+                        content = wordData.text || wordData; // Fallback nếu wordData là string
+                        hue = wordData.hue || (i / count) * 360;
+                        type = 'text';
+                    } else {
+                        content = 'Hello';
+                        hue = (i / count) * 360;
+                        type = 'text';
+                    }
+                } else if (currentMode === 'images') {
+                    if (CONFIG.IMAGES.length > 0) {
+                        const imageData = CONFIG.IMAGES[Math.floor(Math.random() * CONFIG.IMAGES.length)];
+                        content = imageData.name;
+                        hue = imageData.hue;
+                        imagePath = imageData.path;
+                        type = 'image';
+                    } else {
+                        const shapes = ['circle', 'square', 'triangle', 'star'];
+                        content = shapes[Math.floor(Math.random() * shapes.length)];
+                        hue = (i / count) * 360;
+                        type = 'image';
+                    }
+                } else { // mixed
+                    if (Math.random() > 0.5 && CONFIG.WORDS.length > 0) {
+                        const wordData = CONFIG.WORDS[Math.floor(Math.random() * CONFIG.WORDS.length)];
+                        content = wordData.text || wordData; // Fallback nếu wordData là string
+                        hue = wordData.hue || (i / count) * 360;
+                        type = 'text';
+                    } else if (CONFIG.IMAGES.length > 0) {
+                        const imageData = CONFIG.IMAGES[Math.floor(Math.random() * CONFIG.IMAGES.length)];
+                        content = imageData.name || imageData;
+                        hue = imageData.hue || (i / count) * 360;
+                        imagePath = imageData.path;
+                        type = 'image';
+                    } else {
+                        content = 'Hello';
+                        hue = (i / count) * 360;
+                        type = 'text';
+                    }
+                }
+
+                const obj = createObject(content, type, hue, imagePath);
+
+                // Phân bố đều từ trên xuống để không có khoảng trống
+                const fallDistance = CONFIG.RESPAWN_Y - CONFIG.DESPAWN_Y;
+                const progress = i / count;
+                obj.position.y = CONFIG.DESPAWN_Y + (fallDistance * progress) + Math.random() * 5;
+
+                // Hiệu ứng xuất hiện: bắt đầu từ scale 0 và tăng dần
+                obj.scale.setScalar(0);
+                obj.userData.spawnTime = Date.now() + (i * 30); // Delay mỗi object 30ms
+                obj.userData.isSpawning = true;
+
+                scene.add(obj);
+                objects.push(obj);
+            }
+
+            updateObjectCount();
+            console.log(`✅ Tạo ${count} đối tượng phân bố đều từ trên xuống`);
+        }
+
+        /**
+         * Xử lý sự kiện click chuột
+         */
+        function onMouseClick(event) {
+            event.preventDefault();
+
+            const rect = renderer.domElement.getBoundingClientRect();
+            mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(objects);
+
+            if (intersects.length > 0) {
+                // Bấm vào phần tử - dừng và cho phép zoom
+                selectObject(intersects[0].object);
+            } else {
+                // Bấm ra ngoài - trở về bình thường
+                deselectObject();
+            }
+        }
+
+        /**
+         * Xử lý sự kiện di chuyển chuột
+         */
+        function onMouseMove(event) {
+            // Không cần xử lý drag để scale nữa
+            // Chỉ dùng scroll wheel để zoom
+        }
+
+        /**
+         * Xử lý sự kiện scroll wheel
+         */
+        function onMouseWheel(event) {
+            event.preventDefault();
+
+            if (selectedObject) {
+                // Zoom phần tử được chọn
+                const delta = event.deltaY > 0 ? -0.1 : 0.1;
+                const currentScale = selectedObject.scale.x;
+                const newScale = THREE.MathUtils.clamp(
+                    currentScale + delta,
+                    CONFIG.SCALE_RANGE.min,
+                    CONFIG.SCALE_RANGE.max
+                );
+                selectedObject.scale.setScalar(newScale);
+
+                console.log(`🔍 Zoom object: ${newScale.toFixed(2)}x`);
+            }
+            // Nếu không có object được chọn, để OrbitControls xử lý zoom camera
+        }
+
+        /**
+         * Xử lý sự kiện touch start
+         */
+        function onTouchStart(event) {
+            event.preventDefault();
+
+            if (event.touches.length === 1) {
+                const touch = event.touches[0];
+                const rect = renderer.domElement.getBoundingClientRect();
+                mouse.x = ((touch.clientX - rect.left) / rect.width) * 2 - 1;
+                mouse.y = -((touch.clientY - rect.top) / rect.height) * 2 + 1;
+
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects(objects);
+
+                if (intersects.length > 0) {
+                    // Touch vào phần tử - dừng và cho phép zoom bằng pinch
+                    selectObject(intersects[0].object);
+                } else {
+                    // Touch ra ngoài - trở về bình thường
+                    deselectObject();
+                }
+            }
+        }
+
+        /**
+         * Xử lý sự kiện touch move (cho pinch zoom)
+         */
+        function onTouchMove(event) {
+            event.preventDefault();
+
+            // Xử lý pinch zoom cho object được chọn
+            if (selectedObject && event.touches.length === 2) {
+                const touch1 = event.touches[0];
+                const touch2 = event.touches[1];
+
+                const distance = Math.sqrt(
+                    Math.pow(touch2.clientX - touch1.clientX, 2) +
+                    Math.pow(touch2.clientY - touch1.clientY, 2)
+                );
+
+                if (!selectedObject.userData.lastTouchDistance) {
+                    selectedObject.userData.lastTouchDistance = distance;
+                    return;
+                }
+
+                const delta = (distance - selectedObject.userData.lastTouchDistance) * 0.01;
+                const currentScale = selectedObject.scale.x;
+                const newScale = THREE.MathUtils.clamp(
+                    currentScale + delta,
+                    CONFIG.SCALE_RANGE.min,
+                    CONFIG.SCALE_RANGE.max
+                );
+
+                selectedObject.scale.setScalar(newScale);
+                selectedObject.userData.lastTouchDistance = distance;
+            }
+        }
+
+        /**
+         * Xử lý sự kiện touch end
+         */
+        function onTouchEnd(event) {
+            event.preventDefault();
+
+            if (selectedObject) {
+                selectedObject.userData.lastTouchDistance = null;
+            }
+
+            // Không tự động deselect khi touch end
+            // Chỉ deselect khi touch vào chỗ khác
+        }
+
+        /**
+         * Chọn đối tượng
+         */
+        function selectObject(obj) {
+            // Bỏ chọn đối tượng cũ nếu có
+            if (selectedObject && selectedObject !== obj) {
+                selectedObject.userData.isPaused = false;
+                selectedObject.userData.isSelected = false;
+                selectedObject.scale.setScalar(1);
+            }
+
+            // Chọn đối tượng mới
+            selectedObject = obj;
+            selectedObject.userData.isPaused = true;  // Dừng rơi
+            selectedObject.userData.isSelected = true;
+            selectedObject.scale.setScalar(1.2);  // Scale nhẹ để hiển thị được chọn
+
+            // Cập nhật UI
+            const content = obj.userData.content;
+            const type = obj.userData.type;
+            document.getElementById('selected-object').textContent = `${type}: ${content}`;
+
+            console.log(`🎯 Selected: ${content} (${type})`);
+        }
+
+        /**
+         * Bỏ chọn đối tượng
+         */
+        function deselectObject() {
+            if (selectedObject) {
+                selectedObject.userData.isPaused = false;  // Tiếp tục rơi
+                selectedObject.userData.isSelected = false;
+                selectedObject.scale.setScalar(1);  // Trở về kích thước ban đầu
+                selectedObject.userData.lastTouchDistance = null;  // Reset touch data
+
+                console.log(`🔄 Deselected: ${selectedObject.userData.content}`);
+                selectedObject = null;
+            }
+
+            document.getElementById('selected-object').textContent = 'Không có';
+        }
+
+        /**
+         * Toggle nhạc nền
+         */
+        async function toggleMusic() {
+            try {
+                if (currentMusicType === 'ambient') {
+                    if (!musicGenerator) {
+                        console.warn('⚠️ Ambient music not available');
+                        return;
+                    }
+
+                    if (isMusicPlaying) {
+                        musicGenerator.stop();
+                        isMusicPlaying = false;
+                        document.getElementById('toggle-music').textContent = '🎵 Bật nhạc';
+                        console.log('🔇 Ambient music stopped');
+                    } else {
+                        const started = await musicGenerator.start();
+                        if (started) {
+                            isMusicPlaying = true;
+                            document.getElementById('toggle-music').textContent = '🔇 Tắt nhạc';
+                            console.log('🎵 Ambient music started');
+                        }
+                    }
+                } else { // MP3
+                    if (!mp3Player) {
+                        console.warn('⚠️ MP3 player not available');
+                        updateDataStatus('❌ MP3 player không có sẵn');
+                        return;
+                    }
+
+                    if (!mp3Player.audio) {
+                        console.warn('⚠️ No audio loaded in MP3 player');
+                        updateDataStatus('❌ Không có file MP3 nào được tải');
+
+                        // Thử reload audio
+                        if (CONFIG.AUDIO_PLAYLIST && CONFIG.AUDIO_PLAYLIST.length > 0) {
+                            console.log('🔄 Trying to reload audio...');
+                            const success = await mp3Player.init(CONFIG.AUDIO_PLAYLIST);
+                            if (!success) {
+                                updateDataStatus('❌ Không thể tải file MP3');
+                                return;
+                            }
+                        } else {
+                            updateDataStatus('❌ Không có file MP3 trong playlist');
+                            return;
+                        }
+                    }
+
+                    if (isMusicPlaying) {
+                        mp3Player.pause();
+                        isMusicPlaying = false;
+                        document.getElementById('toggle-music').textContent = '🎵 Bật nhạc';
+                        console.log('🔇 MP3 paused');
+                    } else {
+                        console.log('🎵 Attempting to play MP3...');
+                        const started = await mp3Player.play();
+                        if (started) {
+                            isMusicPlaying = true;
+                            document.getElementById('toggle-music').textContent = '🔇 Tắt nhạc';
+                            updateCurrentTrackInfo();
+                            updateDataStatus('🎵 Đang phát MP3');
+                            console.log('🎵 MP3 playing successfully');
+                        } else {
+                            console.error('❌ Failed to start MP3 playback');
+                            updateDataStatus('❌ Không thể phát MP3');
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('❌ Music error:', error);
+            }
+        }
+
+        /**
+         * Chuyển bài tiếp theo (chỉ cho MP3)
+         */
+        async function nextTrack() {
+            if (currentMusicType === 'mp3' && mp3Player) {
+                await mp3Player.nextTrack();
+                updateCurrentTrackInfo();
+            }
+        }
+
+        /**
+         * Thay đổi loại nhạc
+         */
+        function onMusicTypeChange(event) {
+            const newType = event.target.value;
+
+            // Dừng nhạc hiện tại
+            if (isMusicPlaying) {
+                if (currentMusicType === 'ambient' && musicGenerator) {
+                    musicGenerator.stop();
+                } else if (currentMusicType === 'mp3' && mp3Player) {
+                    mp3Player.pause();
+                }
+                isMusicPlaying = false;
+            }
+
+            currentMusicType = newType;
+            updateMusicUI();
+
+            document.getElementById('toggle-music').textContent = '🎵 Bật nhạc';
+            console.log('🔄 Switched to', newType, 'music');
+        }
+
+        /**
+         * Cập nhật UI theo loại nhạc
+         */
+        function updateMusicUI() {
+            const nextTrackBtn = document.getElementById('next-track');
+            const trackInfo = document.getElementById('current-track-info');
+
+            if (currentMusicType === 'mp3') {
+                nextTrackBtn.style.display = 'block';
+                trackInfo.style.display = 'block';
+                updateCurrentTrackInfo();
+            } else {
+                nextTrackBtn.style.display = 'none';
+                trackInfo.style.display = 'none';
+            }
+        }
+
+        /**
+         * Cập nhật thông tin bài hát hiện tại
+         */
+        function updateCurrentTrackInfo() {
+            if (currentMusicType === 'mp3' && mp3Player) {
+                const track = mp3Player.getCurrentTrack();
+                const trackElement = document.getElementById('current-track');
+
+                if (track) {
+                    trackElement.textContent = `${track.name} - ${track.artist}`;
+                } else {
+                    trackElement.textContent = 'Không có';
+                }
+            }
+        }
+
+        /**
+         * Thay đổi âm lượng nhạc
+         */
+        function onVolumeChange(event) {
+            const volume = parseFloat(event.target.value);
+            document.getElementById('volume-value').textContent = Math.round(volume * 100) + '%';
+
+            if (currentMusicType === 'ambient' && musicGenerator) {
+                musicGenerator.setVolume(volume);
+            } else if (currentMusicType === 'mp3' && mp3Player) {
+                mp3Player.setVolume(volume);
+            }
+        }
+
+        /**
+         * Reload data từ files
+         */
+        async function reloadData() {
+            updateDataStatus('Đang tải lại...');
+            await loadDataFiles();
+
+            // Clear existing objects and recreate
+            clearAllObjects();
+            createInitialObjects();
+        }
+
+        /**
+         * Hiện settings (controls + info)
+         */
+        function showSettings() {
+            const controlsPanel = document.getElementById('controls');
+            const infoPanel = document.getElementById('info');
+            const mainBtn = document.getElementById('main-settings');
+
+            // Hiện cả controls và info
+            controlsVisible = true;
+            infoVisible = true;
+
+            controlsPanel.classList.add('visible');
+            infoPanel.classList.add('visible');
+
+            // Ẩn main settings button
+            mainBtn.style.display = 'none';
+
+            console.log('📱 Settings panels shown');
+        }
+
+        /**
+         * Toggle hiển thị controls panel
+         */
+        function toggleControls() {
+            const controlsPanel = document.getElementById('controls');
+            const mainBtn = document.getElementById('main-settings');
+
+            controlsVisible = !controlsVisible;
+
+            if (controlsVisible) {
+                controlsPanel.classList.add('visible');
+                console.log('📱 Controls panel shown');
+            } else {
+                controlsPanel.classList.remove('visible');
+
+                // Nếu cả controls và info đều ẩn, hiện main settings button
+                if (!infoVisible) {
+                    mainBtn.style.display = 'block';
+                }
+                console.log('📱 Controls panel hidden');
+            }
+        }
+
+        /**
+         * Toggle hiển thị info panel
+         */
+        function toggleInfo() {
+            const infoPanel = document.getElementById('info');
+            const toggleBtn = document.getElementById('toggle-info');
+            const mainBtn = document.getElementById('main-settings');
+
+            infoVisible = !infoVisible;
+
+            if (infoVisible) {
+                infoPanel.classList.add('visible');
+                toggleBtn.textContent = '❓';
+                toggleBtn.title = 'Ẩn hướng dẫn';
+                console.log('📱 Info panel shown');
+            } else {
+                infoPanel.classList.remove('visible');
+                toggleBtn.textContent = '❌';
+                toggleBtn.title = 'Hiện hướng dẫn';
+
+                // Nếu cả controls và info đều ẩn, hiện main settings button
+                if (!controlsVisible) {
+                    mainBtn.style.display = 'block';
+                }
+                console.log('📱 Info panel hidden');
+            }
+        }
+
+        /**
+         * Xử lý keyboard shortcuts
+         */
+        function onKeyDown(event) {
+            // Không xử lý nếu đang focus vào input
+            if (event.target.tagName === 'INPUT' || event.target.tagName === 'SELECT') {
+                return;
+            }
+
+            switch(event.key.toLowerCase()) {
+                case 's':
+                    // S để mở settings
+                    if (!controlsVisible && !infoVisible) {
+                        showSettings();
+                    }
+                    break;
+                case 'c':
+                    toggleControls();
+                    break;
+                case 'h':
+                case '?':
+                    toggleInfo();
+                    break;
+                case ' ':
+                    event.preventDefault();
+                    toggleMusic();
+                    break;
+                case 'r':
+                    if (event.ctrlKey || event.metaKey) {
+                        event.preventDefault();
+                        reloadData();
+                    }
+                    break;
+                case 'escape':
+                    deselectObject();
+                    break;
+            }
+        }
+
+        /**
+         * Xử lý thay đổi kích thước cửa sổ
+         */
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        /**
+         * Xử lý thay đổi chế độ hiển thị
+         */
+        function onModeChange(event) {
+            currentMode = event.target.value;
+            clearAllObjects();
+            createInitialObjects();
+        }
+
+        /**
+         * Xử lý thay đổi số lượng đối tượng
+         */
+        function onObjectCountChange(event) {
+            const value = event.target.value;
+            document.getElementById('count-value').textContent = value;
+        }
+
+        /**
+         * Xử lý thay đổi tốc độ rơi
+         */
+        function onFallSpeedChange(event) {
+            fallSpeedMultiplier = parseInt(event.target.value);
+            document.getElementById('speed-value').textContent = fallSpeedMultiplier;
+        }
+
+        /**
+         * Thêm đối tượng mới với phân bố ngẫu nhiên
+         */
+        function addObjects() {
+            const addCount = Math.min(20, parseInt(document.getElementById('object-count').value));
+
+            for (let i = 0; i < addCount; i++) {
+                let content, type;
+                const hue = Math.random() * 360;
+
+                if (currentMode === 'text') {
+                    if (CONFIG.WORDS.length > 0) {
+                        const wordData = CONFIG.WORDS[Math.floor(Math.random() * CONFIG.WORDS.length)];
+                        content = wordData.text || wordData; // Fallback nếu wordData là string
+                        type = 'text';
+                    } else {
+                        content = 'Hello';
+                        type = 'text';
+                    }
+                } else if (currentMode === 'images') {
+                    if (CONFIG.IMAGES.length > 0) {
+                        const imageData = CONFIG.IMAGES[Math.floor(Math.random() * CONFIG.IMAGES.length)];
+                        content = imageData.name || imageData;
+                        type = 'image';
+                    } else {
+                        const shapes = ['circle', 'square', 'triangle', 'star'];
+                        content = shapes[Math.floor(Math.random() * shapes.length)];
+                        type = 'image';
+                    }
+                } else {
+                    if (Math.random() > 0.5 && CONFIG.WORDS.length > 0) {
+                        const wordData = CONFIG.WORDS[Math.floor(Math.random() * CONFIG.WORDS.length)];
+                        content = wordData.text || wordData;
+                        type = 'text';
+                    } else if (CONFIG.IMAGES.length > 0) {
+                        const imageData = CONFIG.IMAGES[Math.floor(Math.random() * CONFIG.IMAGES.length)];
+                        content = imageData.name || imageData;
+                        type = 'image';
+                    } else {
+                        content = 'Hello';
+                        type = 'text';
+                    }
+                }
+
+                const obj = createObject(content, type, hue);
+
+                // Đối tượng mới xuất hiện ở trên cùng
+                obj.position.y = CONFIG.RESPAWN_Y + Math.random() * 20;
+
+                scene.add(obj);
+                objects.push(obj);
+            }
+
+            updateObjectCount();
+            console.log(`➕ Thêm ${addCount} đối tượng mới`);
+        }
+
+        /**
+         * Xóa tất cả đối tượng
+         */
+        function clearAllObjects() {
+            objects.forEach(obj => {
+                scene.remove(obj);
+                obj.geometry.dispose();
+                obj.material.dispose();
+                if (obj.material.map) {
+                    obj.material.map.dispose();
+                }
+            });
+
+            objects = [];
+            selectedObject = null;
+            updateObjectCount();
+            document.getElementById('selected-object').textContent = 'Không có';
+        }
+
+        /**
+         * Cập nhật số lượng đối tượng hiển thị
+         */
+        function updateObjectCount() {
+            // Cập nhật trong UI info nếu có element tương ứng
+            const objectCountElement = document.querySelector('#info .value-display');
+            if (objectCountElement) {
+                objectCountElement.textContent = objects.length;
+            }
+        }
+
+        /**
+         * Ẩn loading screen
+         */
+        function hideLoading() {
+            document.getElementById('loading').classList.add('hidden');
+        }
+
+        /**
+         * Hiển thị lỗi WebGL
+         */
+        function showWebGLError() {
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('webgl-error').style.display = 'block';
+        }
+
+        /**
+         * Vòng lặp animation chính
+         */
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Cập nhật FPS
+            frameCount++;
+            const currentTime = performance.now();
+            if (currentTime - lastTime >= 1000) {
+                fps = Math.round((frameCount * 1000) / (currentTime - lastTime));
+                document.getElementById('fps-counter').textContent = fps;
+                frameCount = 0;
+                lastTime = currentTime;
+            }
+
+            // Cập nhật hiệu ứng lấp lánh của sao
+            if (scene.userData.starsMaterial) {
+                scene.userData.starsMaterial.uniforms.time.value = currentTime * 0.001;
+            }
+
+            // Cập nhật đối tượng
+            updateObjects();
+
+            // Cập nhật controls
+            controls.update();
+
+            // Render scene
+            renderer.render(scene, camera);
+        }
+
+        /**
+         * Cập nhật tất cả đối tượng trong scene
+         */
+        function updateObjects() {
+            const currentTime = Date.now();
+
+            objects.forEach((obj, index) => {
+                // Xử lý hiệu ứng spawn
+                if (obj.userData.isSpawning) {
+                    if (currentTime >= obj.userData.spawnTime) {
+                        const spawnDuration = 500; // 500ms để scale từ 0 lên 1
+                        const elapsed = currentTime - obj.userData.spawnTime;
+                        const progress = Math.min(elapsed / spawnDuration, 1);
+
+                        // Easing function cho hiệu ứng mượt mà
+                        const easeOut = 1 - Math.pow(1 - progress, 3);
+                        obj.scale.setScalar(easeOut);
+
+                        if (progress >= 1) {
+                            obj.userData.isSpawning = false;
+                        }
+                    }
+                    return; // Không rơi khi đang spawn
+                }
+
+                // Billboarding - luôn hướng về camera
+                obj.lookAt(camera.position);
+
+                // Rơi xuống theo trục Y thế giới (không bị ảnh hưởng bởi camera)
+                if (!obj.userData.isPaused) {
+                    // Chỉ thay đổi Y, giữ nguyên X và Z
+                    obj.position.y -= obj.userData.fallSpeed * fallSpeedMultiplier;
+
+                    // Respawn khi rơi quá thấp - tạo lại vị trí spherical
+                    if (obj.position.y < CONFIG.DESPAWN_Y) {
+                        // Tạo vị trí mới trên hình cầu
+                        const radius = CONFIG.SPREAD_AREA * 0.8;
+                        const theta = Math.random() * Math.PI * 2;
+                        const phi = Math.acos(2 * Math.random() - 1);
+
+                        obj.position.x = radius * Math.sin(phi) * Math.cos(theta);
+                        obj.position.y = CONFIG.RESPAWN_Y + Math.random() * 20;
+                        obj.position.z = radius * Math.sin(phi) * Math.sin(theta);
+                    }
+                }
+
+                // Hiệu ứng glow nhẹ
+                if (obj.userData.isSelected) {
+                    obj.material.emissiveIntensity = 0.6 + Math.sin(Date.now() * 0.005) * 0.2;
+                } else {
+                    obj.material.emissiveIntensity = 0.4;
+                }
+            });
+        }
+
+
+    </script>
+</body>
+</html>

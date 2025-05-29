@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test WebGL Support</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #000;
+            color: white;
+            padding: 20px;
+        }
+        
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        
+        .success {
+            background: #4CAF50;
+        }
+        
+        .error {
+            background: #f44336;
+        }
+        
+        .warning {
+            background: #ff9800;
+        }
+        
+        #canvas {
+            border: 1px solid #fff;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Test WebGL Support</h1>
+    
+    <div id="test-results"></div>
+    
+    <canvas id="canvas" width="400" height="300"></canvas>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r155/three.min.js"></script>
+    
+    <script>
+        const results = document.getElementById('test-results');
+        
+        function addResult(message, type = 'success') {
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.textContent = message;
+            results.appendChild(div);
+        }
+        
+        // Test 1: WebGL Context
+        function testWebGLContext() {
+            try {
+                const canvas = document.createElement('canvas');
+                const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+                
+                if (gl) {
+                    addResult('✅ WebGL context: Hỗ trợ', 'success');
+                    
+                    // Test WebGL info
+                    const vendor = gl.getParameter(gl.VENDOR);
+                    const renderer = gl.getParameter(gl.RENDERER);
+                    const version = gl.getParameter(gl.VERSION);
+                    
+                    addResult(`📊 Vendor: ${vendor}`, 'success');
+                    addResult(`🎮 Renderer: ${renderer}`, 'success');
+                    addResult(`📋 Version: ${version}`, 'success');
+                    
+                    return true;
+                } else {
+                    addResult('❌ WebGL context: Không hỗ trợ', 'error');
+                    return false;
+                }
+            } catch (error) {
+                addResult(`❌ WebGL context error: ${error.message}`, 'error');
+                return false;
+            }
+        }
+        
+        // Test 2: Three.js
+        function testThreeJS() {
+            if (typeof THREE !== 'undefined') {
+                addResult(`✅ Three.js: Đã tải (${THREE.REVISION})`, 'success');
+                return true;
+            } else {
+                addResult('❌ Three.js: Chưa tải', 'error');
+                return false;
+            }
+        }
+        
+        // Test 3: Three.js WebGL Renderer
+        function testThreeJSRenderer() {
+            try {
+                const canvas = document.getElementById('canvas');
+                const renderer = new THREE.WebGLRenderer({ canvas: canvas });
+                renderer.setSize(400, 300);
+                
+                addResult('✅ Three.js WebGL Renderer: Thành công', 'success');
+                
+                // Test basic scene
+                const scene = new THREE.Scene();
+                const camera = new THREE.PerspectiveCamera(75, 400/300, 0.1, 1000);
+                
+                // Create a simple cube
+                const geometry = new THREE.BoxGeometry();
+                const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+                const cube = new THREE.Mesh(geometry, material);
+                scene.add(cube);
+                
+                camera.position.z = 5;
+                
+                // Render
+                renderer.render(scene, camera);
+                
+                addResult('✅ Basic 3D rendering: Thành công', 'success');
+                
+                // Animate
+                function animate() {
+                    requestAnimationFrame(animate);
+                    cube.rotation.x += 0.01;
+                    cube.rotation.y += 0.01;
+                    renderer.render(scene, camera);
+                }
+                animate();
+                
+                addResult('✅ Animation loop: Đang chạy', 'success');
+                
+                return true;
+            } catch (error) {
+                addResult(`❌ Three.js Renderer error: ${error.message}`, 'error');
+                return false;
+            }
+        }
+        
+        // Test 4: Canvas 2D (fallback)
+        function testCanvas2D() {
+            try {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                if (ctx) {
+                    addResult('✅ Canvas 2D: Hỗ trợ', 'success');
+                    return true;
+                } else {
+                    addResult('❌ Canvas 2D: Không hỗ trợ', 'error');
+                    return false;
+                }
+            } catch (error) {
+                addResult(`❌ Canvas 2D error: ${error.message}`, 'error');
+                return false;
+            }
+        }
+        
+        // Run all tests
+        function runTests() {
+            addResult('🚀 Bắt đầu kiểm tra...', 'warning');
+            
+            const webglSupport = testWebGLContext();
+            const canvas2DSupport = testCanvas2D();
+            
+            // Wait for Three.js to load
+            setTimeout(() => {
+                const threejsSupport = testThreeJS();
+                
+                if (threejsSupport && webglSupport) {
+                    testThreeJSRenderer();
+                }
+                
+                // Summary
+                addResult('📋 Tóm tắt kết quả:', 'warning');
+                if (webglSupport && threejsSupport) {
+                    addResult('🎉 Hệ thống hỗ trợ đầy đủ cho 3D demo!', 'success');
+                } else if (canvas2DSupport) {
+                    addResult('⚠️ Chỉ hỗ trợ Canvas 2D, không thể chạy 3D demo', 'warning');
+                } else {
+                    addResult('💥 Hệ thống không hỗ trợ graphics, cần cập nhật trình duyệt', 'error');
+                }
+            }, 500);
+        }
+        
+        // Start tests when page loads
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', runTests);
+        } else {
+            runTests();
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+text,category,color_hue
+Hello,greeting,0
+World,noun,60
+Three.js,technology,120
+JavaScript,programming,180
+WebGL,graphics,240
+Xin chào,vietnamese,300
+Thế giới,vietnamese,30
+Lập trình,vietnamese,90
+Đồ họa,vietnamese,150
+Tương tác,vietnamese,210
+Amazing,adjective,270
+Beautiful,adjective,330
+Creative,adjective,45
+Dynamic,adjective,105
+Fantastic,adjective,165
+Love,emotion,225
+Peace,emotion,285
+Joy,emotion,345
+Dream,concept,15
+Future,concept,75
+Innovation,technology,135
+Design,creative,195
+Art,creative,255
+Music,creative,315
+Dance,creative,375
+Code,programming,35
+Debug,programming,95
+Function,programming,155
+Variable,programming,215
+Algorithm,programming,275
+Data,technology,335
+Cloud,technology,25
+AI,technology,85
+Machine,technology,145
+Learning,education,205
+Knowledge,education,265
+Wisdom,education,325
+Science,education,385
+Math,education,45
+Physics,science,105
+Chemistry,science,165
+Biology,science,225
+Space,science,285
+Galaxy,astronomy,345
+Star,astronomy,5
+Planet,astronomy,65
+Universe,astronomy,125
+Cosmos,astronomy,185
