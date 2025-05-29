@@ -1390,8 +1390,16 @@
             // Xóa canvas (trong suốt)
             ctx.clearRect(0, 0, 512, 512);
 
-            // Thiết lập font
-            ctx.font = `bold ${CONFIG.FONT_SIZE}px Arial`;
+            // Thiết lập font với size động dựa trên độ dài text
+            const baseFontSize = CONFIG.FONT_SIZE;
+            let fontSize = baseFontSize;
+
+            // Giảm font size cho text dài
+            if (text.length > 20) {
+                fontSize = Math.max(32, baseFontSize - (text.length - 20) * 2);
+            }
+
+            ctx.font = `bold ${fontSize}px Arial`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
 
@@ -1401,16 +1409,60 @@
             ctx.shadowOffsetX = 0;
             ctx.shadowOffsetY = 0;
 
-            // Vẽ outline để text nổi bật hơn
-            ctx.strokeStyle = `hsl(${hue}, 100%, 80%)`;
-            ctx.lineWidth = 3;
-            ctx.strokeText(text, 256, 256);
+            // Wrap text thành nhiều dòng nếu cần
+            const maxWidth = 450; // Để lại margin
+            const lineHeight = fontSize * 1.2;
+            const lines = wrapText(ctx, text, maxWidth);
 
-            // Vẽ text chính với màu sáng
-            ctx.fillStyle = `hsl(${hue}, 100%, 90%)`;
-            ctx.fillText(text, 256, 256);
+            // Tính toán vị trí bắt đầu để center text block
+            const totalHeight = lines.length * lineHeight;
+            const startY = (512 - totalHeight) / 2 + lineHeight / 2;
+
+            // Vẽ từng dòng
+            lines.forEach((line, index) => {
+                const y = startY + (index * lineHeight);
+
+                // Vẽ outline để text nổi bật hơn
+                ctx.strokeStyle = `hsl(${hue}, 100%, 80%)`;
+                ctx.lineWidth = 3;
+                ctx.strokeText(line, 256, y);
+
+                // Vẽ text chính với màu sáng
+                ctx.fillStyle = `hsl(${hue}, 100%, 90%)`;
+                ctx.fillText(line, 256, y);
+            });
 
             return canvas;
+        }
+
+        /**
+         * Chia text thành nhiều dòng để fit trong width
+         */
+        function wrapText(ctx, text, maxWidth) {
+            const words = text.split(' ');
+            const lines = [];
+            let currentLine = '';
+
+            for (let i = 0; i < words.length; i++) {
+                const testLine = currentLine + (currentLine ? ' ' : '') + words[i];
+                const metrics = ctx.measureText(testLine);
+
+                if (metrics.width > maxWidth && currentLine !== '') {
+                    // Dòng hiện tại đã đầy, bắt đầu dòng mới
+                    lines.push(currentLine);
+                    currentLine = words[i];
+                } else {
+                    currentLine = testLine;
+                }
+            }
+
+            // Thêm dòng cuối cùng
+            if (currentLine) {
+                lines.push(currentLine);
+            }
+
+            // Nếu không có dòng nào (text rỗng), trả về array với 1 dòng rỗng
+            return lines.length > 0 ? lines : [''];
         }
 
         /**
