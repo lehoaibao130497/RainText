@@ -624,6 +624,9 @@
         let autoPlayAttempted = false;
         let userMadeChoice = false;
 
+        // Settings storage key
+        const SETTINGS_KEY = 'rain_text_3d_settings';
+
         // FPS tracking
         let frameCount = 0;
         let lastTime = performance.now();
@@ -682,6 +685,87 @@
         }
 
         /**
+         * Lưu settings vào localStorage
+         */
+        function saveSettings() {
+            const settings = {
+                mode: currentMode,
+                objectCount: parseInt(document.getElementById('object-count').value),
+                fallSpeed: fallSpeedMultiplier,
+                objectSpacing: objectSpacing,
+                musicType: currentMusicType,
+                musicVolume: parseFloat(document.getElementById('music-volume').value),
+                playMode: document.getElementById('play-mode').value,
+                timestamp: Date.now()
+            };
+
+            try {
+                localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+                console.log('💾 Settings saved:', settings);
+            } catch (error) {
+                console.warn('⚠️ Failed to save settings:', error);
+            }
+        }
+
+        /**
+         * Load settings từ localStorage
+         */
+        function loadSettings() {
+            try {
+                const saved = localStorage.getItem(SETTINGS_KEY);
+                if (!saved) {
+                    console.log('📂 No saved settings found');
+                    return;
+                }
+
+                const settings = JSON.parse(saved);
+                console.log('📂 Loading saved settings:', settings);
+
+                // Apply settings to UI
+                if (settings.mode) {
+                    currentMode = settings.mode;
+                    document.getElementById('mode-select').value = settings.mode;
+                }
+
+                if (settings.objectCount) {
+                    document.getElementById('object-count').value = settings.objectCount;
+                    document.getElementById('count-value').textContent = settings.objectCount;
+                }
+
+                if (settings.fallSpeed) {
+                    fallSpeedMultiplier = settings.fallSpeed;
+                    document.getElementById('fall-speed').value = settings.fallSpeed;
+                    document.getElementById('speed-value').textContent = settings.fallSpeed;
+                }
+
+                if (settings.objectSpacing) {
+                    objectSpacing = settings.objectSpacing;
+                    CONFIG.SPREAD_AREA = settings.objectSpacing;
+                    document.getElementById('object-spacing').value = settings.objectSpacing;
+                    document.getElementById('spacing-value').textContent = settings.objectSpacing;
+                }
+
+                if (settings.musicType) {
+                    currentMusicType = settings.musicType;
+                    document.getElementById('music-type').value = settings.musicType;
+                }
+
+                if (settings.musicVolume !== undefined) {
+                    document.getElementById('music-volume').value = settings.musicVolume;
+                    document.getElementById('volume-value').textContent = Math.round(settings.musicVolume * 100) + '%';
+                }
+
+                if (settings.playMode) {
+                    document.getElementById('play-mode').value = settings.playMode;
+                }
+
+                console.log('✅ Settings loaded successfully');
+            } catch (error) {
+                console.warn('⚠️ Failed to load settings:', error);
+            }
+        }
+
+        /**
          * Khởi tạo cảnh 3D và bắt đầu animation
          */
         async function init() {
@@ -714,6 +798,7 @@
                 setupBackground();
                 setupControls();
                 setupEventListeners();
+                loadSettings(); // Load saved settings
                 await loadDataFiles();
                 await initMusicSystem();
                 createInitialObjects();
@@ -919,6 +1004,23 @@
                 controls.enablePan = false;
                 controls.autoRotate = false;
                 controls.autoRotateSpeed = 0.5;
+
+                // Cải thiện touch controls cho mobile
+                controls.touches = {
+                    ONE: THREE.TOUCH.ROTATE,
+                    TWO: THREE.TOUCH.DOLLY_PAN
+                };
+
+                // Tăng sensitivity cho touch
+                controls.rotateSpeed = 1.0;
+                controls.zoomSpeed = 1.2;
+                controls.panSpeed = 0.8;
+
+                // Touch-specific settings
+                controls.enableKeys = false; // Tắt keyboard controls trên mobile
+                controls.screenSpacePanning = false;
+
+                console.log('📱 Enhanced touch controls enabled');
             } catch (error) {
                 console.warn('⚠️ Lỗi khởi tạo OrbitControls:', error);
                 setupBasicControls();
@@ -2121,6 +2223,7 @@
                 mp3Player.setPlayMode(mode);
                 updateDataStatus(`🔄 Chế độ phát: ${getPlayModeText(mode)}`);
             }
+            saveSettings();
         }
 
         /**
@@ -2202,6 +2305,8 @@
                 testBtn.textContent = '🧪 Test MP3 UI';
                 testBtn.style.background = '#ff6b6b';
             }
+
+            saveSettings();
         }
 
         /**
@@ -2304,6 +2409,8 @@
             } else if (currentMusicType === 'mp3' && mp3Player) {
                 mp3Player.setVolume(volume);
             }
+
+            saveSettings();
         }
 
         /**
@@ -2499,6 +2606,7 @@
             currentMode = event.target.value;
             clearAllObjects();
             createInitialObjects();
+            saveSettings();
         }
 
         /**
@@ -2507,6 +2615,7 @@
         function onObjectCountChange(event) {
             const value = event.target.value;
             document.getElementById('count-value').textContent = value;
+            saveSettings();
         }
 
         /**
@@ -2515,6 +2624,7 @@
         function onFallSpeedChange(event) {
             fallSpeedMultiplier = parseInt(event.target.value);
             document.getElementById('speed-value').textContent = fallSpeedMultiplier;
+            saveSettings();
         }
 
         /**
@@ -2531,6 +2641,7 @@
             redistributeObjects();
 
             console.log(`📏 Object spacing changed to: ${objectSpacing}`);
+            saveSettings();
         }
 
         /**

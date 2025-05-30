@@ -71,20 +71,32 @@ class MP3AudioPlayer {
             });
 
             newAudio.addEventListener('error', (e) => {
-                console.error(`❌ Error loading: ${this.playlist[index].name}`, e);
-                console.error('Error details:', {
-                    error: e.target.error,
-                    src: e.target.src,
-                    networkState: e.target.networkState,
-                    readyState: e.target.readyState
-                });
+                console.warn(`⚠️ Error loading: ${this.playlist[index].name}`);
+                // Chỉ log chi tiết nếu cần debug
+                if (console.debug) {
+                    console.debug('Error details:', {
+                        error: e.target.error,
+                        src: e.target.src,
+                        networkState: e.target.networkState,
+                        readyState: e.target.readyState
+                    });
+                }
             });
 
             newAudio.addEventListener('ended', () => {
-                if (!this.loop || this.playlist.length === 1) return;
+                console.log('🎵 Track ended:', this.currentTrack?.name);
+                console.log('🎵 Current play mode:', this.playMode);
 
-                // Auto next track
-                this.nextTrack();
+                // Xử lý theo play mode
+                if (this.playMode === 'loop') {
+                    // Loop mode: phát lại bài hiện tại
+                    console.log('🔁 Loop mode: replaying current track');
+                    this.play();
+                } else {
+                    // Sequential hoặc Random: chuyển bài tiếp theo
+                    console.log('⏭️ Auto next track');
+                    this.nextTrack();
+                }
             });
 
             // Đợi load xong với timeout ngắn hơn
@@ -137,8 +149,13 @@ class MP3AudioPlayer {
             return true;
 
         } catch (error) {
-            console.error('❌ Failed to load track:', this.playlist[index].name, error);
-            console.error('Track path:', this.playlist[index].path);
+            console.warn('⚠️ Failed to load track:', this.playlist[index].name);
+            console.warn('Track path:', this.playlist[index].path);
+
+            // Log chi tiết chỉ khi debug
+            if (console.debug) {
+                console.debug('Load error details:', error);
+            }
 
             // Thử track tiếp theo nếu có
             if (this.playlist.length > 1 && index < this.playlist.length - 1) {
@@ -256,9 +273,15 @@ class MP3AudioPlayer {
 
         switch (this.playMode) {
             case 'loop':
-                // Lặp lại bài hiện tại
-                nextIndex = this.currentIndex;
-                break;
+                // Loop mode: restart current track thay vì load lại
+                console.log('🔁 Loop mode: restarting current track');
+                if (this.audio) {
+                    this.audio.currentTime = 0;
+                    if (this.isPlaying) {
+                        await this.play();
+                    }
+                }
+                return true;
 
             case 'random':
                 // Chọn ngẫu nhiên, tránh lặp lại gần đây
@@ -292,9 +315,15 @@ class MP3AudioPlayer {
 
         switch (this.playMode) {
             case 'loop':
-                // Lặp lại bài hiện tại
-                prevIndex = this.currentIndex;
-                break;
+                // Loop mode: restart current track
+                console.log('🔁 Loop mode: restarting current track');
+                if (this.audio) {
+                    this.audio.currentTime = 0;
+                    if (this.isPlaying) {
+                        await this.play();
+                    }
+                }
+                return true;
 
             case 'random':
                 // Lấy từ lịch sử hoặc random
@@ -416,13 +445,6 @@ class MP3AudioPlayer {
 
     /**
      * Lấy playlist
-     */
-    getPlaylist() {
-        return this.playlist;
-    }
-
-    /**
-     * Lấy danh sách playlist
      */
     getPlaylist() {
         return this.playlist;
