@@ -86,15 +86,27 @@ class MP3AudioPlayer {
             newAudio.addEventListener('ended', () => {
                 console.log('🎵 Track ended:', this.currentTrack?.name);
                 console.log('🎵 Current play mode:', this.playMode);
+                console.log('🎵 Play mode type:', typeof this.playMode);
 
-                // Xử lý theo play mode
+                // Xử lý theo play mode - kiểm tra cả string và type
                 if (this.playMode === 'loop') {
                     // Loop mode: phát lại bài hiện tại
                     console.log('🔁 Loop mode: replaying current track');
-                    this.play();
+                    if (this.audio) {
+                        this.audio.currentTime = 0;
+                        this.play();
+                    }
+                } else if (this.playMode === 'sequential' || !this.playMode) {
+                    // Sequential mode hoặc default
+                    console.log('⏭️ Sequential mode: next track');
+                    this.nextTrack();
+                } else if (this.playMode === 'random') {
+                    // Random mode
+                    console.log('🔀 Random mode: random track');
+                    this.nextTrack();
                 } else {
-                    // Sequential hoặc Random: chuyển bài tiếp theo
-                    console.log('⏭️ Auto next track');
+                    // Fallback
+                    console.warn('⚠️ Unknown play mode:', this.playMode, '- defaulting to sequential');
                     this.nextTrack();
                 }
             });
@@ -171,21 +183,49 @@ class MP3AudioPlayer {
      * Phát nhạc
      */
     async play() {
+        console.log('🎵 MP3Player.play() called');
+        console.log('🎵 Audio element exists:', !!this.audio);
+        console.log('🎵 Current track:', this.currentTrack);
+
         if (!this.audio) {
             console.warn('⚠️ No audio loaded');
             return false;
         }
 
+        console.log('🎵 Audio state before play:', {
+            paused: this.audio.paused,
+            currentTime: this.audio.currentTime,
+            duration: this.audio.duration,
+            readyState: this.audio.readyState,
+            src: this.audio.src
+        });
+
         try {
             // Đảm bảo audio context được resume (cần cho auto-play)
             if (this.audio.paused) {
+                console.log('🎵 Audio is paused, calling play()...');
                 await this.audio.play();
+                console.log('🎵 Audio.play() completed successfully');
+            } else {
+                console.log('🎵 Audio is already playing');
             }
 
             this.isPlaying = true;
             console.log('🎵 Playing:', this.currentTrack.name);
+            console.log('🎵 Audio state after play:', {
+                paused: this.audio.paused,
+                currentTime: this.audio.currentTime,
+                volume: this.audio.volume,
+                muted: this.audio.muted
+            });
             return true;
         } catch (error) {
+            console.error('🎵 Play error details:', {
+                name: error.name,
+                message: error.message,
+                code: error.code
+            });
+
             // Auto-play có thể bị block bởi browser policy
             if (error.name === 'NotAllowedError') {
                 console.warn('⚠️ Auto-play blocked by browser. User interaction required.');

@@ -298,25 +298,22 @@
             <p>Chuẩn bị các đối tượng rơi</p>
         </div>
 
-        <!-- Auto-play notification -->
-        <div id="autoplay-notice" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(10px); z-index: 1000; align-items: center; justify-content: center;">
-            <div style="background: linear-gradient(135deg, rgba(0, 255, 255, 0.1), rgba(255, 107, 107, 0.1)); border: 2px solid rgba(0, 255, 255, 0.5); border-radius: 20px; padding: 40px; text-align: center; backdrop-filter: blur(20px); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1); max-width: 400px; margin: 20px;">
+        <!-- Start overlay for user interaction -->
+        <div id="start-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(10px); z-index: 999; align-items: center; justify-content: center; color: white; font-family: Arial, sans-serif;">
+            <div style="text-align: center; max-width: 400px; padding: 40px;">
                 <div style="font-size: 60px; margin-bottom: 20px; animation: pulse 2s infinite;">🎵</div>
-                <h3 style="color: #00ffff; margin-bottom: 15px; font-size: 24px; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5); font-weight: 300;">Phát nhạc nền?</h3>
-                <p style="margin-bottom: 30px; font-size: 16px; line-height: 1.6; color: rgba(255, 255, 255, 0.9); font-weight: 300;">Bạn có muốn phát nhạc nền trong khi xem demo không?</p>
-                <div style="display: flex; gap: 20px; justify-content: center;">
-                    <button id="start-music-yes" style="background: linear-gradient(135deg, #00ff88, #00cc66); color: white; border: none; padding: 15px 30px; border-radius: 50px; cursor: pointer; font-weight: 600; font-size: 16px; transition: all 0.3s ease; box-shadow: 0 8px 20px rgba(0, 255, 136, 0.3); display: flex; align-items: center; gap: 8px;">
-                        <span style="font-size: 20px;">🎶</span> Có
-                    </button>
-                    <button id="start-music-no" style="background: linear-gradient(135deg, #ff6b6b, #ff5252); color: white; border: none; padding: 15px 30px; border-radius: 50px; cursor: pointer; font-weight: 600; font-size: 16px; transition: all 0.3s ease; box-shadow: 0 8px 20px rgba(255, 107, 107, 0.3); display: flex; align-items: center; gap: 8px;">
-                        <span style="font-size: 20px;">🔇</span> Không
-                    </button>
-                </div>
+                <h2 style="color: #00ffff; margin-bottom: 15px; font-size: 28px;">Chào mừng đến với Rain Text 3D!</h2>
+                <p style="color: #ccc; margin-bottom: 30px; line-height: 1.6; font-size: 16px;">
+                    Nhấn để bắt đầu trải nghiệm với hiệu ứng 3D và nhạc nền tuyệt vời.
+                </p>
+                <button id="start-experience" style="background: linear-gradient(45deg, #00ffff, #00cc99); color: black; border: none; padding: 15px 30px; border-radius: 25px; font-weight: bold; cursor: pointer; font-size: 18px; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0, 255, 255, 0.3);">
+                    🚀 Bắt đầu trải nghiệm
+                </button>
             </div>
         </div>
 
         <!-- Main Settings Button -->
-        <button id="main-settings" style="position: absolute; top: 20px; left: 20px; background: rgba(0, 255, 255, 0.9); color: black; border: none; padding: 12px 18px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; z-index: 11; box-shadow: 0 2px 10px rgba(0, 255, 255, 0.3);" title="Mở cài đặt">⚙️ Settings</button>
+        <button id="main-settings" style="position: absolute; top: 20px; left: 20px; background: transparent; color: white; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; z-index: 11; min-width: auto; width: auto;" title="Mở cài đặt">⚙️ Settings</button>
 
 
 
@@ -368,7 +365,7 @@
             </div>
 
             <div class="control-group">
-                <button id="test-mp3-ui" style="background: #ff6b6b; color: white;">🧪 Test MP3 UI</button>
+                <button id="test-mp3-ui" style="background: #4CAF50; color: white;">🎵 Cài đặt MP3</button>
             </div>
 
             <div class="control-group">
@@ -384,12 +381,14 @@
             </div>
 
             <div class="control-group" id="mp3-controls" style="display: none;">
-                <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
+                <h4 style="color: #00ffff; margin-bottom: 15px;">🎵 Cài đặt MP3</h4>
+
+                <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 15px;">
                     <button id="prev-track">⏮️ Trước</button>
                     <button id="next-track">⏭️ Tiếp</button>
                 </div>
 
-                <div style="margin-bottom: 10px;">
+                <div style="margin-bottom: 15px;">
                     <label for="play-mode">Chế độ phát:</label>
                     <select id="play-mode" style="margin-left: 10px; padding: 5px;">
                         <option value="sequential">🔄 Tuần tự</option>
@@ -398,11 +397,25 @@
                     </select>
                 </div>
 
-                <div>
+                <div style="margin-bottom: 15px;">
                     <label for="track-select">Chọn bài:</label>
                     <select id="track-select" style="margin-left: 10px; padding: 5px; width: 200px;">
                         <option value="">-- Chọn bài hát --</option>
                     </select>
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <label for="default-track">Bài mặc định khi mở:</label>
+                    <select id="default-track" style="margin-left: 10px; padding: 5px; width: 200px;">
+                        <option value="">-- Không đặt mặc định --</option>
+                    </select>
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <label>
+                        <input type="checkbox" id="auto-play-enabled" style="width: auto; margin-right: 8px;">
+                        Tự động phát nhạc khi mở
+                    </label>
                 </div>
             </div>
 
@@ -649,6 +662,15 @@
         // Settings storage key
         const SETTINGS_KEY = 'rain_text_3d_settings';
 
+        /**
+         * Reset auto-play state để có thể thử lại
+         */
+        function resetAutoPlayState() {
+            autoPlayAttempted = false;
+            userMadeChoice = false;
+            console.log('🔄 Auto-play state reset');
+        }
+
         // FPS tracking
         let frameCount = 0;
         let lastTime = performance.now();
@@ -718,6 +740,9 @@
                 musicType: currentMusicType,
                 musicVolume: parseFloat(document.getElementById('music-volume').value),
                 playMode: document.getElementById('play-mode').value,
+                selectedTrack: document.getElementById('track-select').value,
+                defaultTrack: document.getElementById('default-track').value,
+                autoPlayEnabled: document.getElementById('auto-play-enabled').checked,
                 timestamp: Date.now()
             };
 
@@ -779,6 +804,18 @@
 
                 if (settings.playMode) {
                     document.getElementById('play-mode').value = settings.playMode;
+                }
+
+                if (settings.selectedTrack !== undefined) {
+                    document.getElementById('track-select').value = settings.selectedTrack;
+                }
+
+                if (settings.defaultTrack !== undefined) {
+                    document.getElementById('default-track').value = settings.defaultTrack;
+                }
+
+                if (settings.autoPlayEnabled !== undefined) {
+                    document.getElementById('auto-play-enabled').checked = settings.autoPlayEnabled;
                 }
 
                 console.log('✅ Settings loaded successfully');
@@ -1220,7 +1257,10 @@
             document.getElementById('add-objects').addEventListener('click', addObjects);
             document.getElementById('clear-objects').addEventListener('click', clearAllObjects);
             document.getElementById('reload-data').addEventListener('click', reloadData);
-            document.getElementById('test-mp3-ui').addEventListener('click', testMP3UI);
+            document.getElementById('test-mp3-ui').addEventListener('click', toggleMP3Settings);
+            document.getElementById('default-track').addEventListener('change', onDefaultTrackChange);
+            document.getElementById('auto-play-enabled').addEventListener('change', onAutoPlayToggle);
+            document.getElementById('start-experience').addEventListener('click', startExperience);
             document.getElementById('toggle-music').addEventListener('click', toggleMusic);
             document.getElementById('prev-track').addEventListener('click', prevTrack);
             document.getElementById('next-track').addEventListener('click', nextTrack);
@@ -1357,13 +1397,42 @@
                     const success = await mp3Player.init(CONFIG.AUDIO_PLAYLIST);
                     if (success) {
                         console.log('✅ MP3 Player initialized successfully with', CONFIG.AUDIO_PLAYLIST.length, 'tracks');
+
+                        // Populate track lists first
+                        populateTrackList();
+                        populateDefaultTrackList();
+
+                        // Load saved settings into MP3 UI after populating lists
+                        loadSettingsIntoMP3UI();
+
+                        // Apply saved play mode if available (redundant but safe)
+                        const savedPlayMode = document.getElementById('play-mode').value;
+                        if (savedPlayMode && mp3Player.setPlayMode) {
+                            mp3Player.setPlayMode(savedPlayMode);
+                            console.log('🔄 Applied saved play mode:', savedPlayMode);
+                        }
+
                         updateMusicUI();
 
-                        // Tự động phát MP3 đầu tiên
-                        currentMusicType = 'mp3';
-                        document.getElementById('music-type').value = 'mp3';
-                        console.log('🎵 Starting auto-play MP3...');
-                        await autoStartMusic();
+                        // Kiểm tra auto-play setting và hiện start overlay nếu cần
+                        console.log('🎵 Current music type after settings load:', currentMusicType);
+                        console.log('🎵 MP3 Player state:', {
+                            hasPlayer: !!mp3Player,
+                            hasAudio: !!mp3Player?.audio,
+                            currentTrack: mp3Player?.getCurrentTrack(),
+                            playlist: mp3Player?.getPlaylist()?.length
+                        });
+
+                        // Kiểm tra auto-play có được bật không
+                        const autoPlayCheckbox = document.getElementById('auto-play-enabled');
+                        const autoPlayEnabled = autoPlayCheckbox ? autoPlayCheckbox.checked : false;
+
+                        if (currentMusicType === 'mp3' && autoPlayEnabled) {
+                            console.log('🎵 Auto-play enabled, showing start overlay for user interaction');
+                            showStartOverlay();
+                        } else {
+                            console.log('🎵 Auto-play disabled or not MP3 mode, no overlay needed');
+                        }
                     } else {
                         console.error('❌ MP3 Player initialization failed');
                         updateDataStatus('❌ Lỗi khởi tạo MP3 player');
@@ -1393,8 +1462,23 @@
                 return;
             }
 
+            console.log('🎵 autoStartMusic called, autoPlayAttempted:', autoPlayAttempted);
+
             if (autoPlayAttempted) {
                 console.log('🎵 Auto-play already attempted, skipping');
+                return;
+            }
+
+            // Kiểm tra auto-play có được bật không
+            const autoPlayCheckbox = document.getElementById('auto-play-enabled');
+            const autoPlayEnabled = autoPlayCheckbox ? autoPlayCheckbox.checked : true; // Default true nếu chưa có checkbox
+
+            console.log('🎵 Auto-play checkbox found:', !!autoPlayCheckbox);
+            console.log('🎵 Auto-play enabled:', autoPlayEnabled);
+
+            if (!autoPlayEnabled) {
+                console.log('🎵 Auto-play disabled by user setting');
+                autoPlayAttempted = true;
                 return;
             }
 
@@ -1402,12 +1486,70 @@
 
             try {
                 console.log('🎵 Auto-starting MP3 music...');
+
+                // Ưu tiên default track từ saved settings, sau đó đến selected track
+                let targetTrackIndex = -1;
+
+                // Lấy saved settings để check default track
+                try {
+                    const saved = localStorage.getItem(SETTINGS_KEY);
+                    if (saved) {
+                        const settings = JSON.parse(saved);
+                        console.log('🎵 Checking saved settings for default track:', settings.defaultTrack);
+
+                        // Kiểm tra default track từ settings trước
+                        if (settings.defaultTrack !== undefined && settings.defaultTrack !== '') {
+                            targetTrackIndex = parseInt(settings.defaultTrack);
+                            console.log('🎵 Using saved default track:', targetTrackIndex);
+                        }
+                        // Nếu không có default track, dùng selected track
+                        else if (settings.selectedTrack !== undefined && settings.selectedTrack !== '') {
+                            targetTrackIndex = parseInt(settings.selectedTrack);
+                            console.log('🎵 Using saved selected track:', targetTrackIndex);
+                        }
+                    }
+                } catch (error) {
+                    console.warn('⚠️ Failed to read saved settings for track selection:', error);
+                }
+
+                // Fallback: check UI elements
+                if (targetTrackIndex === -1) {
+                    const defaultTrackSelect = document.getElementById('default-track');
+                    const trackSelect = document.getElementById('track-select');
+
+                    console.log('🎵 Default track element found:', !!defaultTrackSelect);
+                    console.log('🎵 Track select element found:', !!trackSelect);
+                    console.log('🎵 Default track value:', defaultTrackSelect?.value);
+                    console.log('🎵 Selected track value:', trackSelect?.value);
+
+                    // Kiểm tra default track UI
+                    if (defaultTrackSelect && defaultTrackSelect.value !== '') {
+                        targetTrackIndex = parseInt(defaultTrackSelect.value);
+                        console.log('🎵 Using UI default track:', targetTrackIndex);
+                    }
+                    // Nếu không có default track, dùng selected track UI
+                    else if (trackSelect && trackSelect.value !== '') {
+                        targetTrackIndex = parseInt(trackSelect.value);
+                        console.log('🎵 Using UI selected track:', targetTrackIndex);
+                    }
+                    else {
+                        console.log('🎵 No default or selected track, using first track');
+                    }
+                }
+
+                if (targetTrackIndex >= 0 && targetTrackIndex < mp3Player.getPlaylist().length) {
+                    console.log('🎵 Loading track:', targetTrackIndex);
+                    await mp3Player.selectTrack(targetTrackIndex);
+                }
+
                 console.log('🎵 Current track:', mp3Player.getCurrentTrack());
 
                 // Delay nhỏ để đảm bảo UI đã sẵn sàng
                 await new Promise(resolve => setTimeout(resolve, 500));
 
+                console.log('🎵 Attempting to play MP3...');
                 const started = await mp3Player.play();
+                console.log('🎵 MP3 play result:', started);
 
                 if (started) {
                     isMusicPlaying = true;
@@ -1417,17 +1559,29 @@
                         toggleBtn.textContent = '🔇 Tắt nhạc';
                     }
                     updateCurrentTrackInfo();
+                    updateTrackSelectUI(); // Cập nhật UI selection
                     const track = mp3Player.getCurrentTrack();
                     updateDataStatus(`🎵 Tự động phát: ${track?.name || 'MP3'}`);
                     console.log('✅ Auto-started MP3:', track?.name);
+                    console.log('🎵 Audio element state:', {
+                        paused: mp3Player.audio?.paused,
+                        currentTime: mp3Player.audio?.currentTime,
+                        duration: mp3Player.audio?.duration,
+                        volume: mp3Player.audio?.volume,
+                        muted: mp3Player.audio?.muted,
+                        readyState: mp3Player.audio?.readyState
+                    });
                 } else {
-                    // Auto-play bị block, hiển thị notification
-                    console.warn('⚠️ Auto-play blocked, showing user notification');
-                    showAutoPlayNotification();
+                    console.warn('⚠️ Auto-play blocked by browser or failed to start');
+                    console.log('🎵 MP3 Player state:', {
+                        hasAudio: !!mp3Player.audio,
+                        currentTrack: mp3Player.getCurrentTrack(),
+                        isPlaying: mp3Player.isPlaying,
+                        playlist: mp3Player.getPlaylist()?.length
+                    });
                 }
             } catch (error) {
                 console.error('❌ Auto-start MP3 error:', error);
-                await autoStartAmbientMusic();
             }
         }
 
@@ -1461,77 +1615,7 @@
             }
         }
 
-        /**
-         * Hiển thị notification auto-play với tùy chọn Có/Không
-         */
-        function showAutoPlayNotification() {
-            const notice = document.getElementById('autoplay-notice');
-            const yesBtn = document.getElementById('start-music-yes');
-            const noBtn = document.getElementById('start-music-no');
 
-            notice.style.display = 'flex';
-            console.log('🎵 Showing auto-play choice dialog');
-
-            // Ngăn click outside popup trigger music
-            notice.addEventListener('click', (e) => {
-                if (e.target === notice) {
-                    console.log('🚫 Click outside popup - no action');
-                    e.stopPropagation();
-                    e.preventDefault();
-                }
-            });
-
-            // Event listener cho nút "Có"
-            yesBtn.addEventListener('click', async () => {
-                console.log('✅ User chose to play music');
-                userMadeChoice = true;
-                notice.style.display = 'none';
-
-                // Phát nhạc
-                await startMusicAfterUserChoice();
-            }, { once: true });
-
-            // Event listener cho nút "Không"
-            noBtn.addEventListener('click', () => {
-                console.log('❌ User chose not to play music');
-                userMadeChoice = true;
-                notice.style.display = 'none';
-
-                // Đảm bảo không phát nhạc
-                isMusicPlaying = false;
-                if (mp3Player && mp3Player.audio) {
-                    mp3Player.pause();
-                }
-                if (musicGenerator && musicGenerator.isPlaying) {
-                    musicGenerator.stop();
-                }
-
-                // Cập nhật UI
-                document.getElementById('toggle-music').textContent = '🎵 Bật/Tắt nhạc';
-                updateDataStatus('🔇 Người dùng chọn không phát nhạc');
-            }, { once: true });
-
-            // Thêm hover effects cho buttons
-            yesBtn.addEventListener('mouseenter', () => {
-                yesBtn.style.transform = 'scale(1.08) translateY(-2px)';
-                yesBtn.style.boxShadow = '0 12px 25px rgba(0, 255, 136, 0.4)';
-            });
-
-            yesBtn.addEventListener('mouseleave', () => {
-                yesBtn.style.transform = 'scale(1) translateY(0)';
-                yesBtn.style.boxShadow = '0 8px 20px rgba(0, 255, 136, 0.3)';
-            });
-
-            noBtn.addEventListener('mouseenter', () => {
-                noBtn.style.transform = 'scale(1.08) translateY(-2px)';
-                noBtn.style.boxShadow = '0 12px 25px rgba(255, 107, 107, 0.4)';
-            });
-
-            noBtn.addEventListener('mouseleave', () => {
-                noBtn.style.transform = 'scale(1) translateY(0)';
-                noBtn.style.boxShadow = '0 8px 20px rgba(255, 107, 107, 0.3)';
-            });
-        }
 
         /**
          * Bắt đầu phát nhạc sau khi user chọn "Có"
@@ -1544,6 +1628,7 @@
                         isMusicPlaying = true;
                         document.getElementById('toggle-music').textContent = '🔇 Tắt nhạc';
                         updateCurrentTrackInfo();
+                        updateTrackSelectUI(); // Cập nhật UI selection
                         const track = mp3Player.getCurrentTrack();
                         updateDataStatus(`🎵 Đang phát: ${track?.name || 'MP3'}`);
                         console.log('🎵 MP3 music started after user choice');
@@ -2354,6 +2439,8 @@
                 const track = mp3Player.getCurrentTrack();
                 updateDataStatus(`🎵 Đang phát: ${track?.name || 'MP3'}`);
             }
+
+            saveSettings();
         }
 
         /**
@@ -2413,11 +2500,36 @@
             document.getElementById('toggle-music').textContent = '🎵 Bật nhạc';
             console.log('🔄 Switched to', newType, 'music');
 
-            // Reset test button nếu có
-            const testBtn = document.getElementById('test-mp3-ui');
-            if (testBtn) {
-                testBtn.textContent = '🧪 Test MP3 UI';
-                testBtn.style.background = '#ff6b6b';
+            // Reset MP3 settings button nếu có
+            const settingsBtn = document.getElementById('test-mp3-ui');
+            if (settingsBtn) {
+                settingsBtn.textContent = '🎵 Cài đặt MP3';
+                settingsBtn.style.background = '#4CAF50';
+            }
+
+            saveSettings();
+        }
+
+        /**
+         * Thay đổi bài mặc định
+         */
+        function onDefaultTrackChange(event) {
+            const defaultTrackIndex = event.target.value;
+            console.log('🎵 Default track changed to:', defaultTrackIndex);
+            saveSettings();
+        }
+
+        /**
+         * Toggle auto-play
+         */
+        function onAutoPlayToggle(event) {
+            const autoPlayEnabled = event.target.checked;
+            console.log('🎵 Auto-play toggled:', autoPlayEnabled);
+
+            // Reset auto-play state để có thể thử lại nếu user bật lại
+            if (autoPlayEnabled) {
+                resetAutoPlayState();
+                console.log('🎵 Auto-play enabled, will attempt on next music start');
             }
 
             saveSettings();
@@ -2496,6 +2608,48 @@
         }
 
         /**
+         * Populate danh sách bài hát vào default track dropdown
+         */
+        function populateDefaultTrackList() {
+            console.log('📋 populateDefaultTrackList called');
+
+            if (currentMusicType !== 'mp3' || !mp3Player) {
+                console.log('❌ Cannot populate default tracks: not MP3 mode or no player');
+                return;
+            }
+
+            const defaultTrackSelect = document.getElementById('default-track');
+            const playlist = mp3Player.getPlaylist();
+
+            if (!defaultTrackSelect) {
+                console.error('❌ default-track element not found!');
+                return;
+            }
+
+            if (!playlist || playlist.length === 0) {
+                console.warn('⚠️ No playlist available for default tracks');
+                return;
+            }
+
+            // Clear existing options (except first one)
+            defaultTrackSelect.innerHTML = '<option value="">-- Không đặt mặc định --</option>';
+
+            // Add tracks to dropdown
+            playlist.forEach((track, index) => {
+                const option = document.createElement('option');
+                option.value = index.toString();
+                option.textContent = track.name || `Track ${index + 1}`;
+                defaultTrackSelect.appendChild(option);
+                console.log(`📋 Added default track ${index}: ${track.name}`);
+            });
+
+            // Load saved default track value sẽ được handle bởi loadSettingsIntoMP3UI
+            console.log('📋 Default track list populated, will load saved value later');
+
+            console.log(`✅ Populated default track list with ${playlist.length} tracks`);
+        }
+
+        /**
          * Cập nhật thông tin bài hát hiện tại
          */
         function updateCurrentTrackInfo() {
@@ -2528,6 +2682,145 @@
         }
 
         /**
+         * Load saved settings vào MP3 UI khi mở settings panel
+         */
+        function loadSettingsIntoMP3UI() {
+            console.log('🎵 Loading settings into MP3 UI...');
+
+            try {
+                const saved = localStorage.getItem(SETTINGS_KEY);
+                if (!saved) {
+                    console.log('📂 No saved settings found for MP3 UI');
+                    return;
+                }
+
+                const settings = JSON.parse(saved);
+                console.log('📂 Loading MP3 settings:', settings);
+
+                // Load play mode
+                if (settings.playMode) {
+                    const playModeSelect = document.getElementById('play-mode');
+                    if (playModeSelect) {
+                        playModeSelect.value = settings.playMode;
+                        console.log('🔄 Set play mode to:', settings.playMode);
+
+                        // Apply to MP3 player
+                        if (mp3Player && mp3Player.setPlayMode) {
+                            mp3Player.setPlayMode(settings.playMode);
+                        }
+                    }
+                }
+
+                // Load selected track
+                if (settings.selectedTrack !== undefined) {
+                    const trackSelect = document.getElementById('track-select');
+                    if (trackSelect) {
+                        trackSelect.value = settings.selectedTrack;
+                        console.log('🎵 Set selected track to:', settings.selectedTrack);
+                    }
+                }
+
+                // Load default track
+                if (settings.defaultTrack !== undefined) {
+                    const defaultTrackSelect = document.getElementById('default-track');
+                    if (defaultTrackSelect) {
+                        defaultTrackSelect.value = settings.defaultTrack;
+                        console.log('🎵 Set default track to:', settings.defaultTrack);
+                    }
+                }
+
+                // Load auto-play setting
+                if (settings.autoPlayEnabled !== undefined) {
+                    const autoPlayCheckbox = document.getElementById('auto-play-enabled');
+                    if (autoPlayCheckbox) {
+                        autoPlayCheckbox.checked = settings.autoPlayEnabled;
+                        console.log('🎵 Set auto-play to:', settings.autoPlayEnabled);
+                    }
+                }
+
+                console.log('✅ MP3 UI settings loaded successfully');
+            } catch (error) {
+                console.warn('⚠️ Failed to load MP3 UI settings:', error);
+            }
+        }
+
+
+
+        /**
+         * Hiển thị start overlay để user interaction
+         */
+        function showStartOverlay() {
+            console.log('🎵 Showing start overlay for user interaction');
+            const overlay = document.getElementById('start-overlay');
+            const loading = document.getElementById('loading');
+
+            if (overlay && loading) {
+                loading.style.display = 'none';
+                overlay.style.display = 'flex';
+            }
+        }
+
+        /**
+         * Bắt đầu trải nghiệm sau user interaction
+         */
+        async function startExperience() {
+            console.log('🚀 User clicked start experience - beginning auto-play');
+
+            const overlay = document.getElementById('start-overlay');
+            if (overlay) {
+                overlay.style.display = 'none';
+            }
+
+            // Reset auto-play state
+            resetAutoPlayState();
+
+            // Bây giờ có user interaction, có thể auto-play
+            if (currentMusicType === 'mp3' && mp3Player) {
+                console.log('🎵 Starting MP3 with user interaction...');
+                await autoStartMusic();
+            } else if (currentMusicType === 'ambient' && musicGenerator) {
+                console.log('🎵 Starting ambient music with user interaction...');
+                await autoStartAmbientMusic();
+            }
+        }
+
+        /**
+         * Đồng bộ trạng thái MP3 settings button với panel hiện tại
+         */
+        function syncMP3SettingsState() {
+            const mp3Controls = document.getElementById('mp3-controls');
+            const trackInfo = document.getElementById('current-track-info');
+            const settingsBtn = document.getElementById('test-mp3-ui');
+
+            if (!mp3Controls || !trackInfo || !settingsBtn) {
+                console.log('🎵 MP3 elements not found for sync');
+                return;
+            }
+
+            // Kiểm tra trạng thái hiện tại của MP3 controls
+            const mp3ControlsVisible = mp3Controls.style.display === 'block';
+            const trackInfoVisible = trackInfo.style.display === 'block';
+            const isMP3SettingsVisible = mp3ControlsVisible || trackInfoVisible;
+
+            console.log('🎵 Syncing MP3 settings state:', {
+                mp3ControlsVisible,
+                trackInfoVisible,
+                isMP3SettingsVisible
+            });
+
+            // Cập nhật button text và style theo trạng thái thực tế
+            if (isMP3SettingsVisible) {
+                settingsBtn.textContent = '🔇 Ẩn cài đặt';
+                settingsBtn.style.background = '#f44336';
+                console.log('🎵 MP3 settings button synced to "open" state');
+            } else {
+                settingsBtn.textContent = '🎵 Cài đặt MP3';
+                settingsBtn.style.background = '#4CAF50';
+                console.log('🎵 MP3 settings button synced to "closed" state');
+            }
+        }
+
+        /**
          * Reload data từ files
          */
         async function reloadData() {
@@ -2540,52 +2833,62 @@
         }
 
         /**
-         * Test MP3 UI - Toggle hiển thị controls
+         * Toggle MP3 Settings Panel
          */
-        function testMP3UI() {
-            console.log('🧪 Testing MP3 UI...');
+        function toggleMP3Settings() {
+            console.log('🎵 Toggling MP3 Settings...');
 
             const mp3Controls = document.getElementById('mp3-controls');
             const trackInfo = document.getElementById('current-track-info');
-            const testBtn = document.getElementById('test-mp3-ui');
+            const settingsBtn = document.getElementById('test-mp3-ui');
 
-            console.log('🧪 MP3 Controls element:', mp3Controls);
-            console.log('🧪 Track Info element:', trackInfo);
+            console.log('🎵 MP3 Controls element:', mp3Controls);
+            console.log('🎵 Track Info element:', trackInfo);
+            console.log('🎵 Current display style:', mp3Controls?.style.display);
 
-            // Check current state
-            const isCurrentlyVisible = mp3Controls && mp3Controls.style.display === 'block';
+            // Check current state - consider both 'block' and empty/undefined as visible states
+            const currentDisplay = mp3Controls ? mp3Controls.style.display : 'none';
+            const isCurrentlyVisible = currentDisplay === 'block';
+
+            console.log('🎵 Is currently visible:', isCurrentlyVisible);
 
             if (mp3Controls && trackInfo) {
                 if (isCurrentlyVisible) {
-                    // Hide MP3 controls
+                    // Hide MP3 settings
                     mp3Controls.style.display = 'none';
                     trackInfo.style.display = 'none';
-                    testBtn.textContent = '🧪 Show MP3 UI';
-                    testBtn.style.background = '#ff6b6b';
-                    console.log('❌ Hidden MP3 controls');
+                    settingsBtn.textContent = '🎵 Cài đặt MP3';
+                    settingsBtn.style.background = '#4CAF50';
+                    console.log('❌ Hidden MP3 settings');
                 } else {
-                    // Show MP3 controls
+                    // Show MP3 settings
                     mp3Controls.style.display = 'block';
                     trackInfo.style.display = 'block';
-                    testBtn.textContent = '🧪 Hide MP3 UI';
-                    testBtn.style.background = '#00ff88';
+                    settingsBtn.textContent = '🔇 Ẩn cài đặt';
+                    settingsBtn.style.background = '#f44336';
 
                     // Force set MP3 mode
                     currentMusicType = 'mp3';
                     document.getElementById('music-type').value = 'mp3';
 
-                    // Try to populate track list
+                    // Populate track lists
                     if (mp3Player) {
                         populateTrackList();
+                        populateDefaultTrackList();
+
+                        // Load saved settings into UI
+                        loadSettingsIntoMP3UI();
                     } else {
                         console.log('❌ No MP3 player available');
                     }
 
-                    console.log('✅ Shown MP3 controls');
+                    console.log('✅ Shown MP3 settings');
                 }
+            } else {
+                console.error('❌ MP3 Controls or Track Info elements not found!');
             }
 
-            console.log('🧪 Current state:', {
+            console.log('🎵 MP3 Settings state:', {
                 currentMusicType,
                 mp3Player: !!mp3Player,
                 playlist: mp3Player ? mp3Player.getPlaylist() : null,
@@ -2611,6 +2914,9 @@
             // Ẩn main settings button
             mainBtn.style.display = 'none';
 
+            // Kiểm tra và đồng bộ trạng thái MP3 settings nếu đang hiện
+            syncMP3SettingsState();
+
             console.log('📱 Settings panels shown');
         }
 
@@ -2619,20 +2925,28 @@
          */
         function toggleControls() {
             const controlsPanel = document.getElementById('controls');
+            const infoPanel = document.getElementById('info');
             const mainBtn = document.getElementById('main-settings');
 
             controlsVisible = !controlsVisible;
 
             if (controlsVisible) {
                 controlsPanel.classList.add('visible');
+                // Đồng bộ MP3 settings state khi hiện controls
+                syncMP3SettingsState();
                 console.log('📱 Controls panel shown');
             } else {
                 controlsPanel.classList.remove('visible');
 
-                // Nếu cả controls và info đều ẩn, hiện main settings button
-                if (!infoVisible) {
-                    mainBtn.style.display = 'block';
+                // Khi ẩn controls, cũng ẩn info panel
+                if (infoVisible) {
+                    infoPanel.classList.remove('visible');
+                    infoVisible = false;
+                    console.log('📱 Info panel also hidden');
                 }
+
+                // Hiện main settings button khi ẩn hết
+                mainBtn.style.display = 'block';
                 console.log('📱 Controls panel hidden');
             }
         }
@@ -2651,6 +2965,8 @@
                 infoPanel.classList.add('visible');
                 toggleBtn.textContent = '❓';
                 toggleBtn.title = 'Ẩn hướng dẫn';
+                // Đồng bộ MP3 settings state khi hiện info
+                syncMP3SettingsState();
                 console.log('📱 Info panel shown');
             } else {
                 infoPanel.classList.remove('visible');
@@ -2894,6 +3210,11 @@
          * Trigger auto-play (có thể gọi nhiều lần)
          */
         async function triggerAutoPlay() {
+            console.log('🎵 triggerAutoPlay called');
+            console.log('🎵 isMusicPlaying:', isMusicPlaying);
+            console.log('🎵 userMadeChoice:', userMadeChoice);
+            console.log('🎵 autoPlayAttempted:', autoPlayAttempted);
+
             if (isMusicPlaying || userMadeChoice) {
                 console.log('🎵 Music already playing or user made choice, skipping auto-play');
                 return;
