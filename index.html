@@ -304,7 +304,7 @@
                 <div style="font-size: 60px; margin-bottom: 20px; animation: pulse 2s infinite;">🎵</div>
                 <h2 style="color: #00ffff; margin-bottom: 15px; font-size: 28px;">Chào mừng đến với Rain Text 3D!</h2>
                 <p style="color: #ccc; margin-bottom: 30px; line-height: 1.6; font-size: 16px;">
-                    Nhấn để bắt đầu trải nghiệm với hiệu ứng 3D và nhạc nền tuyệt vời.
+                    Nhấn để bắt đầu trải nghiệm với hiệu ứng 3D và nhạc nền tự động phát.
                 </p>
                 <button id="start-experience" style="background: linear-gradient(45deg, #00ffff, #00cc99); color: black; border: none; padding: 15px 30px; border-radius: 25px; font-weight: bold; cursor: pointer; font-size: 18px; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0, 255, 255, 0.3);">
                     🚀 Bắt đầu trải nghiệm
@@ -392,7 +392,7 @@
                     <label for="play-mode">Chế độ phát:</label>
                     <select id="play-mode" style="margin-left: 10px; padding: 5px;">
                         <option value="sequential">🔄 Tuần tự</option>
-                        <option value="loop">🔁 Lặp lại</option>
+                        <option value="loop" selected>🔁 Lặp lại</option>
                         <option value="random">🔀 Ngẫu nhiên</option>
                     </select>
                 </div>
@@ -413,7 +413,7 @@
 
                 <div style="margin-bottom: 15px;">
                     <label>
-                        <input type="checkbox" id="auto-play-enabled" style="width: auto; margin-right: 8px;">
+                        <input type="checkbox" id="auto-play-enabled" checked style="width: auto; margin-right: 8px;">
                         Tự động phát nhạc khi mở
                     </label>
                 </div>
@@ -646,7 +646,7 @@
         let musicGenerator = null;
         let mp3Player = null;
         let isMusicPlaying = false;
-        let currentMusicType = 'ambient'; // 'ambient' or 'mp3'
+        let currentMusicType = 'mp3'; // 'ambient' or 'mp3' - default to mp3
 
         // Data loading
         let dataLoaded = false;
@@ -795,6 +795,9 @@
                 if (settings.musicType) {
                     currentMusicType = settings.musicType;
                     document.getElementById('music-type').value = settings.musicType;
+                    console.log('🔍 Loaded music type from settings:', settings.musicType);
+                } else {
+                    console.log('🔍 No saved music type, using default:', currentMusicType);
                 }
 
                 if (settings.musicVolume !== undefined) {
@@ -1423,15 +1426,25 @@
                             playlist: mp3Player?.getPlaylist()?.length
                         });
 
-                        // Kiểm tra auto-play có được bật không
+                        // Kiểm tra auto-play có được bật không (default true)
                         const autoPlayCheckbox = document.getElementById('auto-play-enabled');
-                        const autoPlayEnabled = autoPlayCheckbox ? autoPlayCheckbox.checked : false;
+                        const autoPlayEnabled = autoPlayCheckbox ? autoPlayCheckbox.checked : true; // Default true
+
+                        console.log('🔍 DEBUG: Checking auto-play conditions...');
+                        console.log('🔍 Auto-play checkbox element:', autoPlayCheckbox);
+                        console.log('🔍 Auto-play checkbox found:', !!autoPlayCheckbox);
+                        console.log('🔍 Auto-play checkbox checked:', autoPlayCheckbox?.checked);
+                        console.log('🔍 Auto-play enabled (final):', autoPlayEnabled);
+                        console.log('🔍 Current music type:', currentMusicType);
+                        console.log('🔍 Should show overlay?', currentMusicType === 'mp3' && autoPlayEnabled);
 
                         if (currentMusicType === 'mp3' && autoPlayEnabled) {
-                            console.log('🎵 Auto-play enabled, showing start overlay for user interaction');
+                            console.log('✅ CONDITIONS MET: Showing start overlay for user interaction');
                             showStartOverlay();
                         } else {
-                            console.log('🎵 Auto-play disabled or not MP3 mode, no overlay needed');
+                            console.log('❌ CONDITIONS NOT MET: Auto-play disabled or not MP3 mode');
+                            console.log('   - Is MP3?', currentMusicType === 'mp3');
+                            console.log('   - Auto-play enabled?', autoPlayEnabled);
                         }
                     } else {
                         console.error('❌ MP3 Player initialization failed');
@@ -1471,7 +1484,7 @@
 
             // Kiểm tra auto-play có được bật không
             const autoPlayCheckbox = document.getElementById('auto-play-enabled');
-            const autoPlayEnabled = autoPlayCheckbox ? autoPlayCheckbox.checked : true; // Default true nếu chưa có checkbox
+            const autoPlayEnabled = autoPlayCheckbox ? autoPlayCheckbox.checked : true; // Default true
 
             console.log('🎵 Auto-play checkbox found:', !!autoPlayCheckbox);
             console.log('🎵 Auto-play enabled:', autoPlayEnabled);
@@ -1533,7 +1546,8 @@
                         console.log('🎵 Using UI selected track:', targetTrackIndex);
                     }
                     else {
-                        console.log('🎵 No default or selected track, using first track');
+                        console.log('🎵 No default or selected track, using first track (index 0)');
+                        targetTrackIndex = 0; // Default to first track
                     }
                 }
 
@@ -2604,6 +2618,12 @@
                 console.log(`📋 Added track ${index}: ${track.name}`);
             });
 
+            // Set default selected track to 0 (first track)
+            if (playlist.length > 0) {
+                trackSelect.value = '0';
+                console.log('📋 Set default selected track to 0');
+            }
+
             console.log(`✅ Populated track list with ${playlist.length} tracks`);
         }
 
@@ -2643,8 +2663,11 @@
                 console.log(`📋 Added default track ${index}: ${track.name}`);
             });
 
-            // Load saved default track value sẽ được handle bởi loadSettingsIntoMP3UI
-            console.log('📋 Default track list populated, will load saved value later');
+            // Set default track to 0 (first track) if no saved settings
+            if (playlist.length > 0) {
+                defaultTrackSelect.value = '0';
+                console.log('📋 Set default track to 0 (first track)');
+            }
 
             console.log(`✅ Populated default track list with ${playlist.length} tracks`);
         }
@@ -2750,13 +2773,27 @@
          * Hiển thị start overlay để user interaction
          */
         function showStartOverlay() {
-            console.log('🎵 Showing start overlay for user interaction');
+            console.log('🔍 showStartOverlay() called');
             const overlay = document.getElementById('start-overlay');
             const loading = document.getElementById('loading');
 
+            console.log('🔍 Overlay element:', overlay);
+            console.log('🔍 Loading element:', loading);
+            console.log('🔍 Overlay current display:', overlay?.style.display);
+            console.log('🔍 Loading current display:', loading?.style.display);
+
             if (overlay && loading) {
+                console.log('🔍 Setting loading display to none...');
                 loading.style.display = 'none';
+                console.log('🔍 Setting overlay display to flex...');
                 overlay.style.display = 'flex';
+                console.log('✅ Start overlay should now be displayed');
+                console.log('🔍 Overlay final display:', overlay.style.display);
+                console.log('🔍 Loading final display:', loading.style.display);
+            } else {
+                console.error('❌ Could not find overlay or loading elements');
+                console.error('   - Overlay found:', !!overlay);
+                console.error('   - Loading found:', !!loading);
             }
         }
 
@@ -3197,13 +3234,18 @@
          * Ẩn loading screen
          */
         function hideLoading() {
-            document.getElementById('loading').classList.add('hidden');
-            console.log('🎉 Loading completed, scene ready!');
+            const loading = document.getElementById('loading');
 
-            // Trigger auto-play sau khi loading hoàn tất
-            setTimeout(() => {
-                triggerAutoPlay();
-            }, 1000);
+            // Chỉ ẩn loading nếu không có overlay đang hiện
+            const overlay = document.getElementById('start-overlay');
+            const overlayVisible = overlay && overlay.style.display === 'flex';
+
+            if (!overlayVisible) {
+                loading.classList.add('hidden');
+                console.log('🎉 Loading completed, scene ready!');
+            } else {
+                console.log('🎉 Loading completed, but overlay is showing');
+            }
         }
 
         /**
