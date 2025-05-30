@@ -515,8 +515,9 @@
         // Load OrbitControls
         function loadOrbitControls() {
             return new Promise((resolve) => {
+                // Try modern ES6 module first
                 const script = document.createElement('script');
-                script.src = 'https://threejs.org/examples/js/controls/OrbitControls.js';
+                script.src = 'https://unpkg.com/three@0.155.0/examples/js/controls/OrbitControls.js';
 
                 script.onload = function() {
                     console.log('✅ OrbitControls loaded successfully');
@@ -525,7 +526,28 @@
                 };
 
                 script.onerror = function() {
-                    console.warn('⚠️ OrbitControls failed to load, will use basic controls');
+                    console.warn('⚠️ Primary OrbitControls failed, trying backup...');
+                    loadOrbitControlsBackup().then(resolve);
+                };
+
+                document.head.appendChild(script);
+            });
+        }
+
+        // Backup OrbitControls loader
+        function loadOrbitControlsBackup() {
+            return new Promise((resolve) => {
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r155/controls/OrbitControls.js';
+
+                script.onload = function() {
+                    console.log('✅ OrbitControls loaded from backup CDN');
+                    window.librariesLoaded.orbitcontrols = true;
+                    resolve();
+                };
+
+                script.onerror = function() {
+                    console.warn('⚠️ All OrbitControls CDNs failed, will use basic controls');
                     window.librariesLoaded.orbitcontrols = false;
                     resolve(); // Don't reject, just continue without OrbitControls
                 };
@@ -988,6 +1010,10 @@
          * Thiết lập điều khiển camera
          */
         function setupControls() {
+            console.log('🎮 Setting up camera controls...');
+            console.log('🔍 THREE.OrbitControls available:', typeof THREE.OrbitControls !== 'undefined');
+            console.log('🔍 THREE.TOUCH available:', typeof THREE.TOUCH !== 'undefined');
+
             // Kiểm tra OrbitControls có sẵn không
             if (typeof THREE.OrbitControls === 'undefined') {
                 console.warn('⚠️ OrbitControls không có sẵn, sử dụng điều khiển cơ bản');
@@ -1006,13 +1032,18 @@
                 controls.autoRotateSpeed = 0.5;
 
                 // Cải thiện touch controls cho mobile
-                controls.touches = {
-                    ONE: THREE.TOUCH.ROTATE,
-                    TWO: THREE.TOUCH.DOLLY_PAN
-                };
+                if (typeof THREE.TOUCH !== 'undefined') {
+                    controls.touches = {
+                        ONE: THREE.TOUCH.ROTATE,
+                        TWO: THREE.TOUCH.DOLLY_PAN
+                    };
+                    console.log('✅ Touch controls configured');
+                } else {
+                    console.warn('⚠️ THREE.TOUCH not available');
+                }
 
                 // Tăng sensitivity cho touch
-                controls.rotateSpeed = 1.0;
+                controls.rotateSpeed = 1.5; // Increased for better mobile response
                 controls.zoomSpeed = 1.2;
                 controls.panSpeed = 0.8;
 
@@ -1020,7 +1051,7 @@
                 controls.enableKeys = false; // Tắt keyboard controls trên mobile
                 controls.screenSpacePanning = false;
 
-                console.log('📱 Enhanced touch controls enabled');
+                console.log('✅ OrbitControls initialized with enhanced touch support');
             } catch (error) {
                 console.warn('⚠️ Lỗi khởi tạo OrbitControls:', error);
                 setupBasicControls();
@@ -1032,13 +1063,20 @@
          */
         function setupBasicControls() {
             let isMouseDown = false;
+            let isTouching = false;
+            let touchStartDistance = 0;
             let mouseX = 0, mouseY = 0;
+            let touchX = 0, touchY = 0;
             let cameraDistance = CONFIG.CAMERA_DISTANCE;
 
+            console.log('📱 Setting up basic controls with touch support');
+
+            // Mouse events
             renderer.domElement.addEventListener('mousedown', (event) => {
                 isMouseDown = true;
                 mouseX = event.clientX;
                 mouseY = event.clientY;
+                event.preventDefault();
             });
 
             renderer.domElement.addEventListener('mousemove', (event) => {
@@ -1047,18 +1085,11 @@
                 const deltaX = event.clientX - mouseX;
                 const deltaY = event.clientY - mouseY;
 
-                // Xoay camera quanh scene
-                const spherical = new THREE.Spherical();
-                spherical.setFromVector3(camera.position);
-                spherical.theta -= deltaX * 0.01;
-                spherical.phi += deltaY * 0.01;
-                spherical.phi = Math.max(0.1, Math.min(Math.PI - 0.1, spherical.phi));
-
-                camera.position.setFromSpherical(spherical);
-                camera.lookAt(0, 0, 0);
+                rotateCamera(deltaX, deltaY);
 
                 mouseX = event.clientX;
                 mouseY = event.clientY;
+                event.preventDefault();
             });
 
             renderer.domElement.addEventListener('mouseup', () => {
@@ -1067,18 +1098,101 @@
 
             renderer.domElement.addEventListener('wheel', (event) => {
                 event.preventDefault();
-                cameraDistance += event.deltaY * 0.01;
+                zoomCamera(event.deltaY * 0.01);
+            });
+
+            // Touch events for mobile
+            renderer.domElement.addEventListener('touchstart', (event) => {
+                event.preventDefault();
+
+                if (event.touches.length === 1) {
+                    // Single touch - rotation
+                    isTouching = true;
+                    touchX = event.touches[0].clientX;
+                    touchY = event.touches[0].clientY;
+                    console.log('👆 Single touch start for rotation');
+                } else if (event.touches.length === 2) {
+                    // Two touches - zoom
+                    isTouching = false; // Disable rotation
+                    const touch1 = event.touches[0];
+                    const touch2 = event.touches[1];
+                    touchStartDistance = Math.sqrt(
+                        Math.pow(touch2.clientX - touch1.clientX, 2) +
+                        Math.pow(touch2.clientY - touch1.clientY, 2)
+                    );
+                    console.log('✌️ Two touch start for zoom');
+                }
+            }, { passive: false });
+
+            renderer.domElement.addEventListener('touchmove', (event) => {
+                event.preventDefault();
+
+                if (event.touches.length === 1 && isTouching) {
+                    // Single touch rotation
+                    const deltaX = event.touches[0].clientX - touchX;
+                    const deltaY = event.touches[0].clientY - touchY;
+
+                    rotateCamera(deltaX * 1.5, deltaY * 1.5); // Increased sensitivity for touch
+
+                    touchX = event.touches[0].clientX;
+                    touchY = event.touches[0].clientY;
+                } else if (event.touches.length === 2) {
+                    // Two touch zoom
+                    const touch1 = event.touches[0];
+                    const touch2 = event.touches[1];
+                    const currentDistance = Math.sqrt(
+                        Math.pow(touch2.clientX - touch1.clientX, 2) +
+                        Math.pow(touch2.clientY - touch1.clientY, 2)
+                    );
+
+                    const deltaDistance = currentDistance - touchStartDistance;
+                    zoomCamera(-deltaDistance * 0.01); // Negative for natural pinch behavior
+
+                    touchStartDistance = currentDistance;
+                }
+            }, { passive: false });
+
+            renderer.domElement.addEventListener('touchend', (event) => {
+                event.preventDefault();
+
+                if (event.touches.length === 0) {
+                    isTouching = false;
+                    console.log('🖐️ Touch ended');
+                } else if (event.touches.length === 1) {
+                    // Back to single touch
+                    isTouching = true;
+                    touchX = event.touches[0].clientX;
+                    touchY = event.touches[0].clientY;
+                }
+            }, { passive: false });
+
+            // Helper functions
+            function rotateCamera(deltaX, deltaY) {
+                const spherical = new THREE.Spherical();
+                spherical.setFromVector3(camera.position);
+                spherical.theta -= deltaX * 0.01;
+                spherical.phi += deltaY * 0.01;
+                spherical.phi = Math.max(0.1, Math.min(Math.PI - 0.1, spherical.phi));
+
+                camera.position.setFromSpherical(spherical);
+                camera.lookAt(0, 0, 0);
+            }
+
+            function zoomCamera(delta) {
+                cameraDistance += delta;
                 cameraDistance = Math.max(CONFIG.ZOOM_RANGE.min, Math.min(CONFIG.ZOOM_RANGE.max, cameraDistance));
 
                 const direction = camera.position.clone().normalize();
                 camera.position.copy(direction.multiplyScalar(cameraDistance));
-            });
+            }
 
             // Tạo object giả để tương thích với code khác
             controls = {
                 update: () => {},
                 enableDamping: false
             };
+
+            console.log('✅ Basic controls with touch support initialized');
         }
 
         /**
